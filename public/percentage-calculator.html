@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>퍼센트 계산기 — 할인율, 증가율, 비율 무료 계산</title>
+  <meta name="description" content="퍼센트 계산기로 할인율, 증가율, 비율을 빠르게 계산하세요. 5가지 계산 모드 제공. 무료로 바로 사용 가능.">
+  <meta property="og:title" content="퍼센트 계산기 — 할인율, 증가율, 비율 무료 계산">
+  <meta property="og:description" content="퍼센트 계산기로 할인율, 증가율, 비율을 빠르게 계산하세요. 5가지 계산 모드 제공.">
+  <meta property="og:type" content="website">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: #F1F5F9;
+      color: #1E293B;
+      line-height: 1.6;
+    }
+
+    header {
+      background: #2563EB;
+      color: #fff;
+      padding: 24px 16px;
+      text-align: center;
+    }
+    header h1 { font-size: 1.75rem; font-weight: 700; }
+    header p  { font-size: 0.95rem; margin-top: 6px; opacity: 0.88; }
+
+    .ad-slot {
+      background: #E2E8F0;
+      border: 1px dashed #94A3B8;
+      border-radius: 8px;
+      text-align: center;
+      padding: 20px;
+      color: #64748B;
+      font-size: 0.82rem;
+      margin: 16px auto;
+      max-width: 728px;
+    }
+
+    main {
+      max-width: 720px;
+      margin: 0 auto;
+      padding: 16px;
+    }
+
+    .card {
+      background: #fff;
+      border-radius: 12px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+      padding: 24px;
+      margin-bottom: 20px;
+    }
+
+    .card h2 {
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: #2563EB;
+      margin-bottom: 4px;
+    }
+
+    .card .example-label {
+      font-size: 0.82rem;
+      color: #64748B;
+      margin-bottom: 16px;
+    }
+
+    .input-row {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+
+    .input-row label {
+      font-size: 0.9rem;
+      color: #475569;
+      white-space: nowrap;
+    }
+
+    .input-row input {
+      width: 110px;
+      padding: 9px 12px;
+      border: 1.5px solid #CBD5E1;
+      border-radius: 8px;
+      font-size: 1rem;
+      color: #1E293B;
+      transition: border-color 0.15s;
+      -moz-appearance: textfield;
+    }
+    .input-row input::-webkit-outer-spin-button,
+    .input-row input::-webkit-inner-spin-button { -webkit-appearance: none; }
+    .input-row input:focus { outline: none; border-color: #2563EB; }
+
+    .btn-row {
+      display: flex;
+      gap: 8px;
+      margin-top: 4px;
+      flex-wrap: wrap;
+    }
+
+    button.calc-btn {
+      background: #2563EB;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      padding: 10px 22px;
+      font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    button.calc-btn:hover { background: #1D4ED8; }
+
+    button.reset-btn {
+      background: #F1F5F9;
+      color: #64748B;
+      border: 1.5px solid #CBD5E1;
+      border-radius: 8px;
+      padding: 10px 18px;
+      font-size: 0.9rem;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    button.reset-btn:hover { background: #E2E8F0; }
+
+    .result-box {
+      margin-top: 14px;
+      background: #EFF6FF;
+      border-left: 4px solid #2563EB;
+      border-radius: 6px;
+      padding: 12px 16px;
+      font-size: 1rem;
+      color: #1E3A8A;
+      font-weight: 600;
+      display: none;
+    }
+    .result-box.error {
+      background: #FEF2F2;
+      border-color: #EF4444;
+      color: #991B1B;
+    }
+
+    .formula-box {
+      margin-top: 10px;
+      font-size: 0.82rem;
+      color: #64748B;
+      background: #F8FAFC;
+      border-radius: 6px;
+      padding: 8px 12px;
+      display: none;
+    }
+
+    footer {
+      text-align: center;
+      padding: 24px 16px;
+      font-size: 0.82rem;
+      color: #94A3B8;
+    }
+
+    @media (max-width: 600px) {
+      header h1 { font-size: 1.4rem; }
+      .input-row input { width: 90px; }
+      .card { padding: 18px; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>퍼센트 계산기</h1>
+  <p>할인율 · 증가율 · 비율 · 변화율을 바로 계산하세요</p>
+</header>
+
+<!-- AdSense 슬롯 1: publisher-id 입력 필요 -->
+<div class="ad-slot">광고 영역 (Google AdSense — publisher-id 입력 후 활성화)</div>
+
+<main>
+
+  <!-- 모드 1: Y의 X%는? -->
+  <div class="card">
+    <h2>① Y의 X%는?</h2>
+    <p class="example-label">예: 150원짜리 상품의 20% 할인액은?</p>
+    <div class="input-row">
+      <input type="number" id="m1-y" placeholder="기준값 Y" aria-label="기준값">
+      <label>의</label>
+      <input type="number" id="m1-x" placeholder="퍼센트 X" aria-label="퍼센트">
+      <label>%는?</label>
+    </div>
+    <div class="btn-row">
+      <button class="calc-btn" onclick="calcM1()">계산하기</button>
+      <button class="reset-btn" onclick="resetCard('m1')">다시 계산</button>
+    </div>
+    <div class="result-box" id="m1-result"></div>
+    <div class="formula-box" id="m1-formula">공식: Y × (X ÷ 100)</div>
+  </div>
+
+  <!-- 모드 2: X는 Y의 몇 %? -->
+  <div class="card">
+    <h2>② X는 Y의 몇 %?</h2>
+    <p class="example-label">예: 시험 100점 만점에 85점은 몇 %?</p>
+    <div class="input-row">
+      <input type="number" id="m2-x" placeholder="부분값 X" aria-label="부분값">
+      <label>은(는)</label>
+      <input type="number" id="m2-y" placeholder="전체값 Y" aria-label="전체값">
+      <label>의 몇 %?</label>
+    </div>
+    <div class="btn-row">
+      <button class="calc-btn" onclick="calcM2()">계산하기</button>
+      <button class="reset-btn" onclick="resetCard('m2')">다시 계산</button>
+    </div>
+    <div class="result-box" id="m2-result"></div>
+    <div class="formula-box" id="m2-formula">공식: (X ÷ Y) × 100</div>
+  </div>
+
+  <!-- 모드 3: X가 Y%라면 전체는? -->
+  <div class="card">
+    <h2>③ X가 Y%라면 전체는?</h2>
+    <p class="example-label">예: 30,000원이 전체 금액의 20%라면 전체 금액은?</p>
+    <div class="input-row">
+      <input type="number" id="m3-x" placeholder="부분값 X" aria-label="부분값">
+      <label>이(가)</label>
+      <input type="number" id="m3-y" placeholder="퍼센트 Y" aria-label="퍼센트">
+      <label>%라면 전체는?</label>
+    </div>
+    <div class="btn-row">
+      <button class="calc-btn" onclick="calcM3()">계산하기</button>
+      <button class="reset-btn" onclick="resetCard('m3')">다시 계산</button>
+    </div>
+    <div class="result-box" id="m3-result"></div>
+    <div class="formula-box" id="m3-formula">공식: X × 100 ÷ Y</div>
+  </div>
+
+  <!-- AdSense 슬롯 2: 페이지 중간 -->
+  <!-- AdSense 슬롯 2: publisher-id 입력 필요 -->
+  <div class="ad-slot">광고 영역 (Google AdSense — publisher-id 입력 후 활성화)</div>
+
+  <!-- 모드 4: 퍼센트 변화율 -->
+  <div class="card">
+    <h2>④ 퍼센트 변화율 (증가율 · 감소율)</h2>
+    <p class="example-label">예: 월급이 250만원에서 300만원으로 올랐다면 인상률은?</p>
+    <div class="input-row">
+      <label>이전 값</label>
+      <input type="number" id="m4-old" placeholder="이전 값" aria-label="이전 값">
+      <label>→ 새 값</label>
+      <input type="number" id="m4-new" placeholder="새 값" aria-label="새 값">
+    </div>
+    <div class="btn-row">
+      <button class="calc-btn" onclick="calcM4()">계산하기</button>
+      <button class="reset-btn" onclick="resetCard('m4')">다시 계산</button>
+    </div>
+    <div class="result-box" id="m4-result"></div>
+    <div class="formula-box" id="m4-formula">공식: ((새값 - 이전값) ÷ |이전값|) × 100</div>
+  </div>
+
+  <!-- 모드 5: 퍼센트 차이 -->
+  <div class="card">
+    <h2>⑤ 두 값의 퍼센트 차이</h2>
+    <p class="example-label">예: A 제품 10,000원, B 제품 8,000원의 퍼센트 차이는?</p>
+    <div class="input-row">
+      <label>값 1</label>
+      <input type="number" id="m5-a" placeholder="값 1" aria-label="값 1">
+      <label>값 2</label>
+      <input type="number" id="m5-b" placeholder="값 2" aria-label="값 2">
+    </div>
+    <div class="btn-row">
+      <button class="calc-btn" onclick="calcM5()">계산하기</button>
+      <button class="reset-btn" onclick="resetCard('m5')">다시 계산</button>
+    </div>
+    <div class="result-box" id="m5-result"></div>
+    <div class="formula-box" id="m5-formula">공식: |값1 - 값2| ÷ ((값1 + 값2) ÷ 2) × 100</div>
+  </div>
+
+</main>
+
+<!-- AdSense 슬롯 3: 페이지 하단 -->
+<!-- AdSense 슬롯 3: publisher-id 입력 필요 -->
+<div class="ad-slot" style="max-width:720px; margin: 0 auto 16px;">광고 영역 (Google AdSense — publisher-id 입력 후 활성화)</div>
+
+<footer>
+  <p>© 2026 퍼센트 계산기 · 모든 계산은 브라우저에서 처리됩니다</p>
+</footer>
+
+<script>
+  function showResult(id, html, isError) {
+    var el = document.getElementById(id + '-result');
+    var fml = document.getElementById(id + '-formula');
+    el.innerHTML = html;
+    el.className = 'result-box' + (isError ? ' error' : '');
+    el.style.display = 'block';
+    if (fml && !isError) fml.style.display = 'block';
+  }
+
+  function resetCard(id) {
+    var card = document.getElementById(id + '-result').closest('.card');
+    card.querySelectorAll('input').forEach(function(inp) { inp.value = ''; });
+    var res = document.getElementById(id + '-result');
+    var fml = document.getElementById(id + '-formula');
+    res.style.display = 'none';
+    if (fml) fml.style.display = 'none';
+  }
+
+  function round(val, digits) {
+    return Math.round(val * Math.pow(10, digits)) / Math.pow(10, digits);
+  }
+
+  function fmt(val) {
+    return val.toLocaleString('ko-KR', { maximumFractionDigits: 4 });
+  }
+
+  // 모드 1: Y의 X%
+  function calcM1() {
+    var y = parseFloat(document.getElementById('m1-y').value);
+    var x = parseFloat(document.getElementById('m1-x').value);
+    if (isNaN(y) || isNaN(x)) { showResult('m1', '숫자를 모두 입력해 주세요.', true); return; }
+    var result = y * (x / 100);
+    showResult('m1', fmt(y) + '의 ' + fmt(x) + '% = <strong>' + fmt(round(result, 4)) + '</strong>', false);
+  }
+
+  // 모드 2: X는 Y의 몇 %
+  function calcM2() {
+    var x = parseFloat(document.getElementById('m2-x').value);
+    var y = parseFloat(document.getElementById('m2-y').value);
+    if (isNaN(x) || isNaN(y)) { showResult('m2', '숫자를 모두 입력해 주세요.', true); return; }
+    if (y === 0) { showResult('m2', '전체값(Y)은 0이 될 수 없습니다.', true); return; }
+    var result = (x / y) * 100;
+    showResult('m2', fmt(x) + '은(는) ' + fmt(y) + '의 <strong>' + fmt(round(result, 4)) + '%</strong>', false);
+  }
+
+  // 모드 3: X가 Y%라면 전체는
+  function calcM3() {
+    var x = parseFloat(document.getElementById('m3-x').value);
+    var y = parseFloat(document.getElementById('m3-y').value);
+    if (isNaN(x) || isNaN(y)) { showResult('m3', '숫자를 모두 입력해 주세요.', true); return; }
+    if (y === 0) { showResult('m3', '퍼센트(Y)는 0이 될 수 없습니다.', true); return; }
+    var result = (x * 100) / y;
+    showResult('m3', fmt(x) + '이(가) ' + fmt(y) + '%라면 전체는 <strong>' + fmt(round(result, 4)) + '</strong>', false);
+  }
+
+  // 모드 4: 퍼센트 변화율
+  function calcM4() {
+    var oldVal = parseFloat(document.getElementById('m4-old').value);
+    var newVal = parseFloat(document.getElementById('m4-new').value);
+    if (isNaN(oldVal) || isNaN(newVal)) { showResult('m4', '숫자를 모두 입력해 주세요.', true); return; }
+    if (oldVal === 0) { showResult('m4', '이전 값은 0이 될 수 없습니다.', true); return; }
+    var result = ((newVal - oldVal) / Math.abs(oldVal)) * 100;
+    var sign = result >= 0 ? '+' : '';
+    var label = result >= 0 ? '증가' : '감소';
+    showResult('m4',
+      fmt(oldVal) + ' → ' + fmt(newVal) + ' : <strong>' + sign + fmt(round(result, 2)) + '%</strong> (' + label + ')',
+      false);
+  }
+
+  // 모드 5: 퍼센트 차이
+  function calcM5() {
+    var a = parseFloat(document.getElementById('m5-a').value);
+    var b = parseFloat(document.getElementById('m5-b').value);
+    if (isNaN(a) || isNaN(b)) { showResult('m5', '숫자를 모두 입력해 주세요.', true); return; }
+    if (a === 0 && b === 0) { showResult('m5', '두 값이 모두 0이면 퍼센트 차이를 계산할 수 없습니다.', true); return; }
+    if (a + b === 0) { showResult('m5', '두 값의 합이 0이면 퍼센트 차이를 계산할 수 없습니다. (예: 10과 -10)', true); return; }
+    var result = (Math.abs(a - b) / ((a + b) / 2)) * 100;
+    showResult('m5',
+      fmt(a) + '과(와) ' + fmt(b) + '의 퍼센트 차이: <strong>' + fmt(round(result, 2)) + '%</strong>',
+      false);
+  }
+</script>
+
+</body>
+</html>
