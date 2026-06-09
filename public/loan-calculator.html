@@ -1,0 +1,1019 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>대출 이자 계산기 - 원리금균등·원금균등·만기일시 비교</title>
+  <meta name="description" content="대출 원금·금리·기간을 입력하면 원리금균등, 원금균등, 만기일시상환 방식별 월 상환액과 총이자를 즉시 계산합니다. 무료 대출 계산기.">
+  <meta name="keywords" content="대출이자 계산기, 대출 계산기, 원리금균등상환 계산기, 원금균등상환 계산기, 주택담보대출 이자 계산기, 만기일시상환">
+  <meta property="og:title" content="대출 이자 계산기 - 원리금균등·원금균등·만기일시 비교">
+  <meta property="og:description" content="대출 원금·금리·기간을 입력하면 원리금균등, 원금균등, 만기일시상환 방식별 월 상환액과 총이자를 즉시 계산합니다.">
+  <meta property="og:type" content="website">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <style>
+    /* === 리셋 & 기본 === */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { font-size: 16px; scroll-behavior: smooth; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans KR', sans-serif;
+      background: #f5f6fa;
+      color: #1a1a2e;
+      line-height: 1.6;
+    }
+
+    /* === 헤더 === */
+    header {
+      background: linear-gradient(135deg, #1565c0 0%, #0d47a1 100%);
+      color: #fff;
+      padding: 1.25rem 1rem 1rem;
+      text-align: center;
+    }
+    header h1 {
+      font-size: 1.5rem;
+      font-weight: 700;
+      letter-spacing: -0.5px;
+    }
+    header p {
+      font-size: 0.85rem;
+      opacity: 0.85;
+      margin-top: 0.3rem;
+    }
+    .header-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      background: rgba(255,255,255,0.15);
+      border-radius: 20px;
+      padding: 0.2rem 0.75rem;
+      font-size: 0.75rem;
+      margin-top: 0.5rem;
+    }
+
+    /* === AdSense 슬롯 공통 === */
+    .adsense-slot {
+      background: #e8eaf6;
+      border: 1px dashed #9fa8da;
+      border-radius: 8px;
+      text-align: center;
+      padding: 1rem;
+      color: #5c6bc0;
+      font-size: 0.8rem;
+      margin: 1rem auto;
+      max-width: 728px;
+      min-height: 90px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .adsense-slot.leaderboard { min-height: 90px; }
+    .adsense-slot.rectangle { min-height: 250px; max-width: 336px; }
+
+    /* === 메인 레이아웃 === */
+    main {
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 0 1rem 2rem;
+    }
+
+    /* === 카드 공통 === */
+    .card {
+      background: #fff;
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+      padding: 1.25rem;
+      margin-bottom: 1.25rem;
+    }
+    .card h2 {
+      font-size: 1rem;
+      font-weight: 700;
+      color: #1565c0;
+      margin-bottom: 1rem;
+      padding-bottom: 0.5rem;
+      border-bottom: 2px solid #e3f2fd;
+    }
+
+    /* === 입력 폼 === */
+    .form-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 1rem;
+    }
+    .form-group { display: flex; flex-direction: column; gap: 0.4rem; }
+    .form-group label {
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: #424242;
+    }
+    .input-wrap {
+      display: flex;
+      align-items: center;
+      border: 1.5px solid #e0e0e0;
+      border-radius: 8px;
+      overflow: hidden;
+      transition: border-color 0.2s;
+      background: #fff;
+    }
+    .input-wrap:focus-within { border-color: #1565c0; }
+    .input-wrap input {
+      flex: 1;
+      border: none;
+      padding: 0.65rem 0.75rem;
+      font-size: 1rem;
+      outline: none;
+      background: transparent;
+      min-width: 0;
+    }
+    .input-wrap .unit {
+      padding: 0.65rem 0.75rem;
+      font-size: 0.85rem;
+      color: #757575;
+      background: #f9f9f9;
+      border-left: 1.5px solid #e0e0e0;
+      white-space: nowrap;
+    }
+    .input-wrap select {
+      border: none;
+      padding: 0.65rem 0.75rem;
+      font-size: 0.9rem;
+      outline: none;
+      background: #f9f9f9;
+      color: #424242;
+      cursor: pointer;
+      border-left: 1.5px solid #e0e0e0;
+    }
+
+    /* 기간 입력 행 */
+    .period-row { display: flex; gap: 0.5rem; align-items: center; }
+    .period-row .input-wrap { flex: 1; }
+
+    /* 상환방식 라디오 */
+    .method-group {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 0.5rem;
+    }
+    .method-label {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.5rem;
+      border: 1.5px solid #e0e0e0;
+      border-radius: 8px;
+      padding: 0.65rem 0.85rem;
+      cursor: pointer;
+      transition: border-color 0.2s, background 0.2s;
+    }
+    .method-label:hover { border-color: #90caf9; background: #e3f2fd20; }
+    .method-label input[type="radio"] { margin-top: 0.2rem; accent-color: #1565c0; }
+    .method-label.checked { border-color: #1565c0; background: #e3f2fd; }
+    .method-label .method-title { font-weight: 700; font-size: 0.9rem; }
+    .method-label .method-desc { font-size: 0.75rem; color: #757575; margin-top: 0.15rem; }
+
+    /* 에러 메시지 */
+    .error-msg {
+      font-size: 0.78rem;
+      color: #d32f2f;
+      margin-top: 0.2rem;
+      display: none;
+    }
+    .error-msg.visible { display: block; }
+
+    /* === 결과 요약 === */
+    .result-hidden { display: none; }
+    .result-summary {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 0.75rem;
+    }
+    .summary-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      background: #f5f6fa;
+      border-radius: 10px;
+      padding: 1rem 0.75rem;
+      text-align: center;
+    }
+    .summary-item .label {
+      font-size: 0.78rem;
+      color: #757575;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .summary-item .value {
+      font-size: 1.3rem;
+      font-weight: 800;
+      color: #1565c0;
+      margin-top: 0.3rem;
+    }
+    .summary-item.highlight .value { color: #c62828; }
+    .summary-item .sub {
+      font-size: 0.72rem;
+      color: #9e9e9e;
+      margin-top: 0.2rem;
+    }
+
+    /* === 도넛 차트 === */
+    .chart-wrap {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 1rem;
+    }
+    .chart-canvas-wrap {
+      position: relative;
+      width: 200px;
+      height: 200px;
+    }
+    .chart-legend {
+      display: flex;
+      gap: 1.25rem;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      font-size: 0.85rem;
+    }
+    .legend-dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    /* === 3방식 비교 카드 === */
+    .compare-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 0.75rem;
+    }
+    .compare-card {
+      border: 1.5px solid #e0e0e0;
+      border-radius: 10px;
+      padding: 1rem;
+    }
+    .compare-card.best { border-color: #43a047; background: #f1f8e9; }
+    .compare-card .method-name {
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: #1565c0;
+      margin-bottom: 0.5rem;
+    }
+    .compare-card.best .method-name { color: #2e7d32; }
+    .compare-card .best-badge {
+      display: inline-block;
+      background: #43a047;
+      color: #fff;
+      font-size: 0.65rem;
+      border-radius: 4px;
+      padding: 0.1rem 0.4rem;
+      margin-left: 0.4rem;
+      vertical-align: middle;
+    }
+    /* [수정 1] flex-wrap: wrap 추가 - 320px 화면에서 레이블·값 겹침 방지 */
+    .compare-row {
+      display: flex;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 0.15rem 0.5rem;
+      font-size: 0.82rem;
+      color: #424242;
+      margin-bottom: 0.25rem;
+    }
+    .compare-row .cval {
+      font-weight: 700;
+      color: #1a1a2e;
+    }
+
+    /* === 상환 일정표 === */
+    .schedule-wrap { overflow-x: auto; }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.8rem;
+    }
+    thead th {
+      background: #1565c0;
+      color: #fff;
+      padding: 0.6rem 0.5rem;
+      text-align: right;
+      font-weight: 600;
+      white-space: nowrap;
+    }
+    thead th:first-child { text-align: center; }
+    tbody tr:nth-child(even) { background: #f5f6fa; }
+    tbody tr:hover { background: #e3f2fd; }
+    tbody td {
+      padding: 0.5rem 0.5rem;
+      text-align: right;
+      border-bottom: 1px solid #f0f0f0;
+      color: #424242;
+      white-space: nowrap;
+    }
+    tbody td:first-child {
+      text-align: center;
+      font-weight: 600;
+      color: #1565c0;
+    }
+    tfoot td {
+      padding: 0.6rem 0.5rem;
+      text-align: right;
+      font-weight: 700;
+      background: #e3f2fd;
+      color: #1a1a2e;
+      border-top: 2px solid #1565c0;
+    }
+    tfoot td:first-child { text-align: center; }
+
+    /* 더보기/닫기 버튼 */
+    .btn-more {
+      display: block;
+      width: 100%;
+      margin-top: 0.75rem;
+      padding: 0.65rem;
+      background: #e3f2fd;
+      border: 1.5px solid #90caf9;
+      border-radius: 8px;
+      color: #1565c0;
+      font-size: 0.88rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .btn-more:hover { background: #bbdefb; }
+
+    /* 초기 안내 메시지 */
+    .empty-state {
+      text-align: center;
+      padding: 2rem 1rem;
+      color: #9e9e9e;
+    }
+    .empty-state .icon { font-size: 2.5rem; margin-bottom: 0.5rem; }
+    .empty-state p { font-size: 0.88rem; }
+
+    /* 안내 문구 */
+    .notice {
+      background: #fff8e1;
+      border-left: 4px solid #ffd54f;
+      border-radius: 0 8px 8px 0;
+      padding: 0.75rem 1rem;
+      font-size: 0.78rem;
+      color: #795548;
+      line-height: 1.6;
+    }
+
+    /* === 푸터 === */
+    footer {
+      background: #1a1a2e;
+      color: #9e9e9e;
+      text-align: center;
+      padding: 1.5rem 1rem;
+      font-size: 0.78rem;
+      line-height: 1.8;
+    }
+    footer a { color: #90caf9; text-decoration: none; }
+
+    /* === 반응형 === */
+    @media (min-width: 480px) {
+      .form-grid { grid-template-columns: 1fr 1fr; }
+      .method-group { grid-template-columns: 1fr 1fr 1fr; }
+      .result-summary { grid-template-columns: 1fr 1fr 1fr; }
+      .compare-grid { grid-template-columns: 1fr 1fr 1fr; }
+    }
+    @media (min-width: 600px) {
+      header h1 { font-size: 1.85rem; }
+      .card { padding: 1.5rem; }
+      .chart-wrap { flex-direction: row; justify-content: center; }
+      .chart-canvas-wrap { width: 220px; height: 220px; }
+    }
+    @media (min-width: 768px) {
+      main { padding: 0 1.5rem 2.5rem; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- 헤더 -->
+<header>
+  <h1>대출 이자 계산기</h1>
+  <p>원리금균등 · 원금균등 · 만기일시 상환 방식 비교</p>
+  <div class="header-badge">고정금리 기준 · 무료 · 즉시 계산</div>
+</header>
+
+<!-- AdSense 슬롯 1: 헤더 아래 -->
+<!-- AdSense: publisher-id 입력 필요 -->
+<div class="adsense-slot leaderboard" style="margin: 1rem auto;">
+  <!-- 실제 AdSense 코드 삽입 위치 (헤더 아래 / 728×90 leaderboard) -->
+  광고 영역 (728×90)
+</div>
+
+<main>
+
+  <!-- 입력 폼 -->
+  <div class="card">
+    <h2>대출 조건 입력</h2>
+    <div class="form-grid">
+
+      <!-- 대출 원금 -->
+      <div class="form-group" style="grid-column: 1 / -1;">
+        <label for="principal">대출 원금</label>
+        <div class="input-wrap">
+          <input type="text" id="principal" inputmode="numeric" placeholder="예: 300,000,000" autocomplete="off">
+          <span class="unit">원</span>
+        </div>
+        <span class="error-msg" id="err-principal">대출 원금을 올바르게 입력해 주세요.</span>
+      </div>
+
+      <!-- 연이율 -->
+      <div class="form-group">
+        <label for="rate">연이율</label>
+        <div class="input-wrap">
+          <input type="number" id="rate" inputmode="decimal" placeholder="예: 4.5" min="0.01" max="100" step="0.01">
+          <span class="unit">%</span>
+        </div>
+        <span class="error-msg" id="err-rate">연이율을 올바르게 입력해 주세요.</span>
+      </div>
+
+      <!-- 대출 기간 -->
+      <div class="form-group">
+        <label for="period">대출 기간</label>
+        <div class="input-wrap">
+          <input type="number" id="period" inputmode="numeric" placeholder="예: 30" min="1" step="1">
+          <select id="period-unit">
+            <option value="year">년</option>
+            <option value="month">개월</option>
+          </select>
+        </div>
+        <span class="error-msg" id="err-period">대출 기간을 올바르게 입력해 주세요.</span>
+      </div>
+
+    </div>
+
+    <!-- 상환 방식 -->
+    <div class="form-group" style="margin-top: 1rem;">
+      <label>상환 방식</label>
+      <div class="method-group" id="method-group">
+        <label class="method-label checked">
+          <input type="radio" name="method" value="equal-payment" checked>
+          <div>
+            <div class="method-title">원리금균등</div>
+            <div class="method-desc">매월 동일 금액 납입</div>
+          </div>
+        </label>
+        <label class="method-label">
+          <input type="radio" name="method" value="equal-principal">
+          <div>
+            <div class="method-title">원금균등</div>
+            <div class="method-desc">매월 원금 동일, 이자 감소</div>
+          </div>
+        </label>
+        <label class="method-label">
+          <input type="radio" name="method" value="bullet">
+          <div>
+            <div class="method-title">만기일시</div>
+            <div class="method-desc">매월 이자만, 만기 원금 일시</div>
+          </div>
+        </label>
+      </div>
+    </div>
+  </div>
+
+  <!-- 결과 요약 (초기 빈 상태) -->
+  <div class="card" id="result-card">
+    <h2>계산 결과</h2>
+    <div id="empty-state" class="empty-state">
+      <div class="icon">🧮</div>
+      <p>위 조건을 입력하면 즉시 계산됩니다.</p>
+    </div>
+    <div id="result-content" class="result-hidden">
+      <div class="result-summary" id="result-summary"></div>
+      <div class="notice" style="margin-top: 1rem;">
+        이 계산기는 고정금리 기준으로 계산됩니다. 실제 대출 조건(변동금리, 중도상환수수료 등)에 따라 실제 납입액이 달라질 수 있습니다.
+      </div>
+    </div>
+  </div>
+
+  <!-- 도넛 차트 -->
+  <div class="card result-hidden" id="chart-card">
+    <h2>원금 vs 이자 비율</h2>
+    <div class="chart-wrap">
+      <div class="chart-canvas-wrap">
+        <canvas id="donut-chart"></canvas>
+      </div>
+      <div class="chart-legend" id="chart-legend"></div>
+    </div>
+  </div>
+
+  <!-- 3방식 비교 카드 -->
+  <!-- [수정 2] AdSense 슬롯 2를 비교 카드 아래로 이동 (차트와 비교 카드 사이에서 이동) -->
+  <div class="card result-hidden" id="compare-card">
+    <h2>상환 방식 비교</h2>
+    <div class="compare-grid" id="compare-grid"></div>
+  </div>
+
+  <!-- AdSense 슬롯 2: 비교 카드 아래 -->
+  <!-- AdSense: publisher-id 입력 필요 -->
+  <div class="adsense-slot rectangle result-hidden" id="adsense-mid">
+    <!-- 실제 AdSense 코드 삽입 위치 (비교 카드 아래 / 336×280 rectangle) -->
+    광고 영역 (336×280)
+  </div>
+
+  <!-- 월별 상환 일정표 -->
+  <div class="card result-hidden" id="schedule-card">
+    <h2>월별 상환 일정표</h2>
+    <div class="schedule-wrap">
+      <table id="schedule-table">
+        <thead>
+          <tr>
+            <th>회차</th>
+            <th>월 납입액</th>
+            <th>원금</th>
+            <th>이자</th>
+            <th>잔액</th>
+          </tr>
+        </thead>
+        <tbody id="schedule-body"></tbody>
+        <tfoot id="schedule-foot"></tfoot>
+      </table>
+    </div>
+    <!-- [수정 3] 전체 보기 / 닫기 토글 버튼 -->
+    <button class="btn-more result-hidden" id="btn-more" onclick="toggleSchedule()">전체 보기</button>
+  </div>
+
+</main>
+
+<!-- AdSense 슬롯 3: 푸터 위 -->
+<!-- AdSense: publisher-id 입력 필요 -->
+<div class="adsense-slot leaderboard" style="margin: 0 auto 0;">
+  <!-- 실제 AdSense 코드 삽입 위치 (푸터 위 / 728×90 leaderboard) -->
+  광고 영역 (728×90)
+</div>
+
+<footer>
+  <p>대출 이자 계산기 &mdash; 고정금리 기준 무료 계산 도구</p>
+  <p style="margin-top: 0.4rem;">본 계산기는 참고용이며, 실제 대출 조건과 다를 수 있습니다. 금융 상품 가입 전 금융기관에 문의하세요.</p>
+  <p style="margin-top: 0.4rem; font-size: 0.72rem;">
+    관련: <a href="#">퍼센트 계산기</a>
+  </p>
+</footer>
+
+<script>
+  /* ============================================================
+     유틸리티
+  ============================================================ */
+  function formatKRW(n) {
+    return Math.round(n).toLocaleString('ko-KR') + '원';
+  }
+  function formatKRWPlain(n) {
+    return Math.round(n).toLocaleString('ko-KR');
+  }
+
+  /* 원금 입력 필드 콤마 자동 포맷 */
+  const principalInput = document.getElementById('principal');
+  principalInput.addEventListener('input', function () {
+    const raw = this.value.replace(/,/g, '').replace(/[^0-9]/g, '');
+    this.value = raw ? Number(raw).toLocaleString('ko-KR') : '';
+    scheduleCalculate();
+  });
+
+  /* ============================================================
+     입력값 파싱
+  ============================================================ */
+  function getPrincipal() {
+    const raw = principalInput.value.replace(/,/g, '');
+    const v = parseFloat(raw);
+    return isNaN(v) || v <= 0 ? null : v;
+  }
+  function getRate() {
+    const v = parseFloat(document.getElementById('rate').value);
+    return isNaN(v) || v <= 0 ? null : v;
+  }
+  function getPeriodMonths() {
+    const v = parseInt(document.getElementById('period').value, 10);
+    if (isNaN(v) || v <= 0) return null;
+    const unit = document.getElementById('period-unit').value;
+    return unit === 'year' ? v * 12 : v;
+  }
+  function getMethod() {
+    return document.querySelector('input[name="method"]:checked').value;
+  }
+
+  /* ============================================================
+     계산 공식
+  ============================================================ */
+
+  /**
+   * 원리금균등상환 (PMT)
+   * M = P × r × (1+r)^n / ((1+r)^n - 1)
+   */
+  function calcEqualPayment(P, r, n) {
+    if (r === 0) {
+      const monthly = P / n;
+      const schedule = Array.from({ length: n }, (_, i) => ({
+        month: i + 1,
+        payment: monthly,
+        principal: monthly,
+        interest: 0,
+        balance: P - monthly * (i + 1),
+      }));
+      return { monthly, totalInterest: 0, total: P, schedule };
+    }
+    const factor = Math.pow(1 + r, n);
+    const monthly = P * r * factor / (factor - 1);
+    const schedule = [];
+    let balance = P;
+    let totalInterest = 0;
+    for (let k = 1; k <= n; k++) {
+      const interest = balance * r;
+      const principal = monthly - interest;
+      balance = balance - principal;
+      totalInterest += interest;
+      schedule.push({
+        month: k,
+        payment: monthly,
+        principal,
+        interest,
+        balance: k === n ? 0 : balance,
+      });
+    }
+    return { monthly, totalInterest, total: P + totalInterest, schedule };
+  }
+
+  /**
+   * 원금균등상환
+   * 매월 원금 = P / n
+   * k번째 이자 = (P - 원금 × (k-1)) × r
+   */
+  function calcEqualPrincipal(P, r, n) {
+    const principalPerMonth = P / n;
+    const schedule = [];
+    let totalInterest = 0;
+    for (let k = 1; k <= n; k++) {
+      const remainingPrincipal = P - principalPerMonth * (k - 1);
+      const interest = remainingPrincipal * r;
+      const payment = principalPerMonth + interest;
+      const balance = remainingPrincipal - principalPerMonth;
+      totalInterest += interest;
+      schedule.push({
+        month: k,
+        payment,
+        principal: principalPerMonth,
+        interest,
+        balance: k === n ? 0 : balance,
+      });
+    }
+    const firstPayment = schedule[0].payment;
+    const lastPayment = schedule[n - 1].payment;
+    return { firstPayment, lastPayment, totalInterest, total: P + totalInterest, schedule };
+  }
+
+  /**
+   * 만기일시상환
+   * 매월 이자만 납입, 만기에 원금 일시상환
+   * 월 이자 = P × r, 총이자 = P × r × n
+   */
+  function calcBullet(P, r, n) {
+    const monthlyInterest = P * r;
+    const totalInterest = monthlyInterest * n;
+    const schedule = [];
+    for (let k = 1; k <= n; k++) {
+      const isLast = k === n;
+      schedule.push({
+        month: k,
+        payment: isLast ? P + monthlyInterest : monthlyInterest,
+        principal: isLast ? P : 0,
+        interest: monthlyInterest,
+        balance: isLast ? 0 : P,
+      });
+    }
+    return { monthlyInterest, totalInterest, total: P + totalInterest, schedule };
+  }
+
+  /* ============================================================
+     Chart.js 인스턴스 관리
+  ============================================================ */
+  let donutChart = null;
+
+  function renderChart(principal, totalInterest) {
+    const canvas = document.getElementById('donut-chart');
+    const ctx = canvas.getContext('2d');
+    const interestRatio = (totalInterest / (principal + totalInterest) * 100).toFixed(1);
+    const principalRatio = (100 - parseFloat(interestRatio)).toFixed(1);
+
+    if (donutChart) {
+      donutChart.data.datasets[0].data = [principal, totalInterest];
+      donutChart.update();
+    } else {
+      donutChart = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+          labels: ['원금', '이자'],
+          datasets: [{
+            data: [principal, totalInterest],
+            backgroundColor: ['#1565c0', '#ef5350'],
+            borderWidth: 0,
+            hoverOffset: 6,
+          }]
+        },
+        options: {
+          cutout: '68%',
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              callbacks: {
+                label: function (ctx) {
+                  const total = ctx.dataset.data.reduce((a, b) => a + b, 0);
+                  const pct = (ctx.raw / total * 100).toFixed(1);
+                  return ` ${ctx.label}: ${Math.round(ctx.raw).toLocaleString('ko-KR')}원 (${pct}%)`;
+                }
+              }
+            }
+          }
+        }
+      });
+    }
+
+    document.getElementById('chart-legend').innerHTML = `
+      <div class="legend-item">
+        <div class="legend-dot" style="background:#1565c0;"></div>
+        <span>원금 ${principalRatio}%</span>
+      </div>
+      <div class="legend-item">
+        <div class="legend-dot" style="background:#ef5350;"></div>
+        <span>이자 ${interestRatio}%</span>
+      </div>
+    `;
+  }
+
+  /* ============================================================
+     결과 표시
+  ============================================================ */
+  let fullSchedule = [];
+  let isShowingAll = false;
+
+  function showResult(P, r, n, method) {
+    const ep = calcEqualPayment(P, r, n);
+    const epr = calcEqualPrincipal(P, r, n);
+    const bl = calcBullet(P, r, n);
+
+    // 현재 선택 방식 결과
+    let current;
+    if (method === 'equal-payment') current = ep;
+    else if (method === 'equal-principal') current = epr;
+    else current = bl;
+
+    // 총이자 기준 최저 방식 판별
+    const minInterest = Math.min(ep.totalInterest, epr.totalInterest, bl.totalInterest);
+
+    // 결과 요약
+    let summaryHTML = '';
+    if (method === 'equal-payment') {
+      summaryHTML = `
+        <div class="summary-item">
+          <div class="label">월 상환액</div>
+          <div class="value">${formatKRWPlain(ep.monthly)}</div>
+          <div class="sub">원 (매월 동일)</div>
+        </div>
+        <div class="summary-item highlight">
+          <div class="label">총 이자</div>
+          <div class="value">${formatKRWPlain(ep.totalInterest)}</div>
+          <div class="sub">원</div>
+        </div>
+        <div class="summary-item">
+          <div class="label">총 납입금</div>
+          <div class="value">${formatKRWPlain(ep.total)}</div>
+          <div class="sub">원</div>
+        </div>
+      `;
+      fullSchedule = ep.schedule;
+    } else if (method === 'equal-principal') {
+      summaryHTML = `
+        <div class="summary-item">
+          <div class="label">첫 달 납입액</div>
+          <div class="value">${formatKRWPlain(epr.firstPayment)}</div>
+          <div class="sub">원 (점차 감소)</div>
+        </div>
+        <div class="summary-item highlight">
+          <div class="label">총 이자</div>
+          <div class="value">${formatKRWPlain(epr.totalInterest)}</div>
+          <div class="sub">원</div>
+        </div>
+        <div class="summary-item">
+          <div class="label">총 납입금</div>
+          <div class="value">${formatKRWPlain(epr.total)}</div>
+          <div class="sub">원</div>
+        </div>
+      `;
+      fullSchedule = epr.schedule;
+    } else {
+      summaryHTML = `
+        <div class="summary-item">
+          <div class="label">월 이자 납입</div>
+          <div class="value">${formatKRWPlain(bl.monthlyInterest)}</div>
+          <div class="sub">원 (이자만)</div>
+        </div>
+        <div class="summary-item highlight">
+          <div class="label">총 이자</div>
+          <div class="value">${formatKRWPlain(bl.totalInterest)}</div>
+          <div class="sub">원</div>
+        </div>
+        <div class="summary-item">
+          <div class="label">총 납입금</div>
+          <div class="value">${formatKRWPlain(bl.total)}</div>
+          <div class="sub">원</div>
+        </div>
+      `;
+      fullSchedule = bl.schedule;
+    }
+    document.getElementById('result-summary').innerHTML = summaryHTML;
+
+    // 도넛 차트: 현재 선택 방식 총이자 기준
+    renderChart(P, current.totalInterest);
+
+    // 3방식 비교 카드
+    const methods = [
+      {
+        key: 'equal-payment',
+        name: '원리금균등',
+        monthlyStr: `${formatKRWPlain(ep.monthly)}원 (고정)`,
+        totalInterest: ep.totalInterest,
+        total: ep.total,
+      },
+      {
+        key: 'equal-principal',
+        name: '원금균등',
+        monthlyStr: `${formatKRWPlain(epr.firstPayment)}원 ~ ${formatKRWPlain(epr.lastPayment)}원`,
+        totalInterest: epr.totalInterest,
+        total: epr.total,
+      },
+      {
+        key: 'bullet',
+        name: '만기일시',
+        monthlyStr: `${formatKRWPlain(bl.monthlyInterest)}원 (이자만)`,
+        totalInterest: bl.totalInterest,
+        total: bl.total,
+      },
+    ];
+    const compareHTML = methods.map(m => {
+      const isBest = Math.abs(m.totalInterest - minInterest) < 1;
+      return `
+        <div class="compare-card${isBest ? ' best' : ''}">
+          <div class="method-name">
+            ${m.name}${isBest ? '<span class="best-badge">이자 최소</span>' : ''}
+          </div>
+          <div class="compare-row">
+            <span>월 납입액</span>
+            <span class="cval">${m.monthlyStr}</span>
+          </div>
+          <div class="compare-row">
+            <span>총 이자</span>
+            <span class="cval">${formatKRWPlain(m.totalInterest)}원</span>
+          </div>
+          <div class="compare-row">
+            <span>총 납입금</span>
+            <span class="cval">${formatKRWPlain(m.total)}원</span>
+          </div>
+        </div>
+      `;
+    }).join('');
+    document.getElementById('compare-grid').innerHTML = compareHTML;
+
+    // 상환 일정표 렌더링 (초기 12행)
+    isShowingAll = false;
+    renderScheduleRows(12);
+
+    // 결과 영역 표시
+    document.getElementById('empty-state').style.display = 'none';
+    document.getElementById('result-content').classList.remove('result-hidden');
+    document.getElementById('chart-card').classList.remove('result-hidden');
+    document.getElementById('compare-card').classList.remove('result-hidden');
+    document.getElementById('adsense-mid').classList.remove('result-hidden');
+    document.getElementById('schedule-card').classList.remove('result-hidden');
+
+    // 더보기/닫기 버튼
+    const btnMore = document.getElementById('btn-more');
+    if (fullSchedule.length > 12) {
+      btnMore.classList.remove('result-hidden');
+      btnMore.textContent = `전체 보기 (총 ${fullSchedule.length}회차 표시)`;
+    } else {
+      btnMore.classList.add('result-hidden');
+    }
+  }
+
+  function renderScheduleRows(count) {
+    const rows = fullSchedule.slice(0, count);
+    const tbody = document.getElementById('schedule-body');
+    tbody.innerHTML = rows.map(row => `
+      <tr>
+        <td>${row.month}</td>
+        <td>${formatKRWPlain(row.payment)}</td>
+        <td>${formatKRWPlain(row.principal)}</td>
+        <td>${formatKRWPlain(row.interest)}</td>
+        <td>${formatKRWPlain(row.balance)}</td>
+      </tr>
+    `).join('');
+
+    // 합계 행
+    const totalPayment = fullSchedule.reduce((s, r) => s + r.payment, 0);
+    const totalPrincipal = fullSchedule.reduce((s, r) => s + r.principal, 0);
+    const totalInterest = fullSchedule.reduce((s, r) => s + r.interest, 0);
+    document.getElementById('schedule-foot').innerHTML = `
+      <tr>
+        <td>합계</td>
+        <td>${formatKRWPlain(totalPayment)}</td>
+        <td>${formatKRWPlain(totalPrincipal)}</td>
+        <td>${formatKRWPlain(totalInterest)}</td>
+        <td>0</td>
+      </tr>
+    `;
+  }
+
+  /* [수정 3] 전체 보기 / 닫기 토글 함수 */
+  function toggleSchedule() {
+    const btnMore = document.getElementById('btn-more');
+    if (isShowingAll) {
+      /* 닫기: 12행으로 다시 접기 */
+      isShowingAll = false;
+      renderScheduleRows(12);
+      btnMore.textContent = `전체 보기 (총 ${fullSchedule.length}회차 표시)`;
+    } else {
+      /* 전체 보기: 모든 행 표시 */
+      isShowingAll = true;
+      renderScheduleRows(fullSchedule.length);
+      btnMore.textContent = '닫기 (12회차로 접기)';
+    }
+  }
+
+  /* ============================================================
+     유효성 검사 및 메인 계산 트리거
+  ============================================================ */
+  function validate() {
+    let valid = true;
+
+    const P = getPrincipal();
+    const errPrincipal = document.getElementById('err-principal');
+    if (P === null) {
+      errPrincipal.classList.add('visible');
+      valid = false;
+    } else {
+      errPrincipal.classList.remove('visible');
+    }
+
+    const r = getRate();
+    const errRate = document.getElementById('err-rate');
+    if (r === null) {
+      errRate.classList.add('visible');
+      valid = false;
+    } else {
+      errRate.classList.remove('visible');
+    }
+
+    const n = getPeriodMonths();
+    const errPeriod = document.getElementById('err-period');
+    if (n === null || n > 360) {
+      errPeriod.textContent = n !== null && n > 360
+        ? '최대 360개월(30년)까지 입력 가능합니다.'
+        : '대출 기간을 올바르게 입력해 주세요.';
+      errPeriod.classList.add('visible');
+      valid = false;
+    } else {
+      errPeriod.classList.remove('visible');
+    }
+
+    return valid ? { P, r: r / 12 / 100, n } : null;
+  }
+
+  function scheduleCalculate() {
+    const params = validate();
+    if (!params) return;
+    const method = getMethod();
+    showResult(params.P, params.r, params.n, method);
+  }
+
+  /* ============================================================
+     이벤트 리스너
+  ============================================================ */
+  document.getElementById('rate').addEventListener('input', scheduleCalculate);
+  document.getElementById('period').addEventListener('input', scheduleCalculate);
+  document.getElementById('period-unit').addEventListener('change', scheduleCalculate);
+
+  // 상환방식 라디오 변경
+  document.getElementById('method-group').addEventListener('change', function (e) {
+    document.querySelectorAll('.method-label').forEach(el => el.classList.remove('checked'));
+    e.target.closest('.method-label').classList.add('checked');
+    scheduleCalculate();
+  });
+
+  // 라디오 레이블 클릭 시 checked 클래스 업데이트
+  document.querySelectorAll('.method-label').forEach(label => {
+    label.addEventListener('click', function () {
+      document.querySelectorAll('.method-label').forEach(el => el.classList.remove('checked'));
+      this.classList.add('checked');
+    });
+  });
+</script>
+</body>
+</html>
