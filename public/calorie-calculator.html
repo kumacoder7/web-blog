@@ -1,0 +1,1429 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>기초대사량 계산기 - BMR·TDEE·목표 칼로리 한번에</title>
+  <meta name="description" content="성별·나이·키·체중·활동량을 입력하면 기초대사량(BMR), TDEE, 목표별 칼로리를 즉시 계산합니다. Mifflin과 Harris-Benedict 두 공식 비교 제공.">
+  <meta name="robots" content="index, follow">
+  <meta property="og:title" content="기초대사량 계산기 - BMR·TDEE·목표 칼로리 한번에">
+  <meta property="og:description" content="성별·나이·키·체중·활동량을 입력하면 기초대사량(BMR), TDEE, 목표별 칼로리를 즉시 계산합니다.">
+  <meta property="og:type" content="website">
+  <style>
+    /* ===== 기본 리셋 & 변수 ===== */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --primary: #2563eb;
+      --primary-dark: #1d4ed8;
+      --primary-light: #dbeafe;
+      --success: #16a34a;
+      --success-light: #dcfce7;
+      --warning: #d97706;
+      --warning-light: #fef3c7;
+      --danger: #dc2626;
+      --danger-light: #fee2e2;
+      --purple: #7c3aed;
+      --purple-light: #ede9fe;
+      --gray-50: #f9fafb;
+      --gray-100: #f3f4f6;
+      --gray-200: #e5e7eb;
+      --gray-300: #d1d5db;
+      --gray-400: #9ca3af;
+      --gray-500: #6b7280;
+      --gray-600: #4b5563;
+      --gray-700: #374151;
+      --gray-800: #1f2937;
+      --gray-900: #111827;
+      --radius: 12px;
+      --radius-sm: 8px;
+      --shadow: 0 1px 3px rgba(0,0,0,.1), 0 1px 2px rgba(0,0,0,.06);
+      --shadow-md: 0 4px 6px rgba(0,0,0,.07), 0 2px 4px rgba(0,0,0,.06);
+      --shadow-lg: 0 10px 15px rgba(0,0,0,.1), 0 4px 6px rgba(0,0,0,.05);
+    }
+
+    html { font-size: 16px; scroll-behavior: smooth; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Apple SD Gothic Neo',
+                   'Noto Sans KR', sans-serif;
+      background: var(--gray-50);
+      color: var(--gray-800);
+      line-height: 1.6;
+      min-height: 100vh;
+    }
+
+    /* ===== 헤더 ===== */
+    header {
+      background: linear-gradient(135deg, #1e40af 0%, #2563eb 50%, #3b82f6 100%);
+      color: #fff;
+      padding: 2rem 1rem 1.5rem;
+      text-align: center;
+    }
+
+    header h1 {
+      font-size: 1.75rem;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      margin-bottom: 0.5rem;
+    }
+
+    header p {
+      font-size: 0.9rem;
+      opacity: 0.88;
+      max-width: 480px;
+      margin: 0 auto;
+    }
+
+    /* ===== 광고 슬롯 ===== */
+    .ad-slot {
+      background: #fff;
+      border: 1px dashed var(--gray-300);
+      border-radius: var(--radius-sm);
+      text-align: center;
+      color: var(--gray-400);
+      font-size: 0.78rem;
+      padding: 0.75rem;
+      margin: 1rem auto;
+      max-width: 728px;
+      width: 100%;
+    }
+
+    .ad-slot-label { font-size: 0.7rem; margin-bottom: 0.25rem; }
+
+    /* ===== 메인 레이아웃 ===== */
+    main {
+      max-width: 720px;
+      margin: 0 auto;
+      padding: 1rem;
+    }
+
+    /* ===== 카드 ===== */
+    .card {
+      background: #fff;
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 1.25rem;
+      margin-bottom: 1.25rem;
+    }
+
+    .card-title {
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--gray-800);
+      margin-bottom: 1rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .card-title .icon {
+      width: 1.75rem;
+      height: 1.75rem;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.95rem;
+      flex-shrink: 0;
+    }
+
+    /* ===== 성별 토글 ===== */
+    .gender-toggle {
+      display: flex;
+      border: 2px solid var(--gray-200);
+      border-radius: var(--radius-sm);
+      overflow: hidden;
+      margin-bottom: 1rem;
+    }
+
+    .gender-toggle button {
+      flex: 1;
+      padding: 0.65rem 1rem;
+      border: none;
+      background: #fff;
+      color: var(--gray-500);
+      font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s, color 0.2s;
+    }
+
+    .gender-toggle button.active-male {
+      background: #2563eb;
+      color: #fff;
+    }
+
+    .gender-toggle button.active-female {
+      background: #db2777;
+      color: #fff;
+    }
+
+    /* ===== 입력 폼 ===== */
+    .form-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.75rem;
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 0.3rem;
+    }
+
+    .form-group.full { grid-column: 1 / -1; }
+
+    label {
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: var(--gray-600);
+    }
+
+    .input-wrap {
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+
+    input[type="number"], select {
+      width: 100%;
+      padding: 0.6rem 2.5rem 0.6rem 0.75rem;
+      border: 1.5px solid var(--gray-200);
+      border-radius: var(--radius-sm);
+      font-size: 1rem;
+      color: var(--gray-800);
+      background: #fff;
+      appearance: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+      outline: none;
+    }
+
+    input[type="number"]:focus, select:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(37,99,235,.15);
+    }
+
+    input[type="number"].error {
+      border-color: var(--danger);
+      box-shadow: 0 0 0 3px rgba(220,38,38,.1);
+    }
+
+    .input-unit {
+      position: absolute;
+      right: 0.6rem;
+      font-size: 0.78rem;
+      color: var(--gray-400);
+      pointer-events: none;
+      font-weight: 500;
+    }
+
+    select {
+      padding-right: 2rem;
+      cursor: pointer;
+    }
+
+    select-wrap { position: relative; }
+
+    .select-arrow {
+      position: absolute;
+      right: 0.6rem;
+      color: var(--gray-400);
+      pointer-events: none;
+      font-size: 0.7rem;
+    }
+
+    .error-msg {
+      font-size: 0.75rem;
+      color: var(--danger);
+      display: none;
+    }
+
+    .error-msg.show { display: block; }
+
+    /* ===== 계산 버튼 ===== */
+    .btn-calc {
+      width: 100%;
+      padding: 0.85rem;
+      background: linear-gradient(135deg, #2563eb, #1d4ed8);
+      color: #fff;
+      border: none;
+      border-radius: var(--radius-sm);
+      font-size: 1.05rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: opacity 0.2s, transform 0.1s;
+      margin-top: 0.5rem;
+    }
+
+    .btn-calc:hover { opacity: 0.93; }
+    .btn-calc:active { transform: scale(0.99); }
+
+    /* ===== 결과 영역 ===== */
+    #results { display: none; }
+
+    /* ===== BMR 탭 ===== */
+    .tab-wrap {
+      display: flex;
+      border: 1.5px solid var(--gray-200);
+      border-radius: var(--radius-sm);
+      overflow: hidden;
+      margin-bottom: 1rem;
+    }
+
+    .tab-btn {
+      flex: 1;
+      padding: 0.55rem 0.5rem;
+      border: none;
+      background: #fff;
+      color: var(--gray-500);
+      font-size: 0.82rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s, color 0.2s;
+    }
+
+    .tab-btn.active {
+      background: var(--primary);
+      color: #fff;
+    }
+
+    .bmr-compare {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.75rem;
+    }
+
+    .bmr-card {
+      border: 1.5px solid var(--gray-200);
+      border-radius: var(--radius-sm);
+      padding: 0.85rem;
+      text-align: center;
+    }
+
+    .bmr-card.active-formula {
+      border-color: var(--primary);
+      background: var(--primary-light);
+    }
+
+    .bmr-card .formula-name {
+      font-size: 0.72rem;
+      color: var(--gray-500);
+      font-weight: 600;
+      margin-bottom: 0.3rem;
+    }
+
+    .bmr-card .bmr-value {
+      font-size: 1.6rem;
+      font-weight: 800;
+      color: var(--primary);
+      line-height: 1.1;
+    }
+
+    .bmr-card .bmr-unit {
+      font-size: 0.75rem;
+      color: var(--gray-500);
+    }
+
+    .bmr-card .bmr-note {
+      font-size: 0.7rem;
+      color: var(--gray-400);
+      margin-top: 0.2rem;
+    }
+
+    /* ===== TDEE 결과 ===== */
+    .tdee-big {
+      text-align: center;
+      padding: 1.25rem;
+      background: linear-gradient(135deg, #dbeafe, #ede9fe);
+      border-radius: var(--radius-sm);
+      margin-bottom: 0.75rem;
+    }
+
+    .tdee-big .label {
+      font-size: 0.8rem;
+      color: var(--gray-600);
+      font-weight: 600;
+      margin-bottom: 0.25rem;
+    }
+
+    .tdee-big .value {
+      font-size: 2.5rem;
+      font-weight: 900;
+      color: var(--primary-dark);
+      line-height: 1;
+    }
+
+    .tdee-big .unit {
+      font-size: 0.85rem;
+      color: var(--gray-500);
+      margin-top: 0.2rem;
+    }
+
+    .tdee-formula-note {
+      font-size: 0.78rem;
+      color: var(--gray-500);
+      text-align: center;
+    }
+
+    /* ===== 목표별 칼로리 카드 5단계 ===== */
+    .goal-grid {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    .goal-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0.75rem 1rem;
+      border-radius: var(--radius-sm);
+      border: 1.5px solid transparent;
+    }
+
+    .goal-item .goal-label {
+      font-size: 0.88rem;
+      font-weight: 700;
+    }
+
+    .goal-item .goal-sub {
+      font-size: 0.72rem;
+      margin-top: 0.1rem;
+    }
+
+    .goal-item .goal-kcal {
+      font-size: 1.15rem;
+      font-weight: 800;
+    }
+
+    .goal-item .goal-unit {
+      font-size: 0.72rem;
+      font-weight: 500;
+    }
+
+    .goal-fast-loss  { background: var(--danger-light);  border-color: #fca5a5; }
+    .goal-loss       { background: #fff7ed;               border-color: #fed7aa; }
+    .goal-maintain   { background: var(--success-light);  border-color: #86efac; }
+    .goal-gain       { background: #f0fdf4;               border-color: #bbf7d0; }
+    .goal-fast-gain  { background: var(--purple-light);   border-color: #c4b5fd; }
+
+    .goal-fast-loss .goal-label  { color: var(--danger); }
+    .goal-loss .goal-label        { color: #ea580c; }
+    .goal-maintain .goal-label    { color: var(--success); }
+    .goal-gain .goal-label        { color: #15803d; }
+    .goal-fast-gain .goal-label   { color: var(--purple); }
+
+    .goal-fast-loss .goal-kcal  { color: var(--danger); }
+    .goal-loss .goal-kcal        { color: #ea580c; }
+    .goal-maintain .goal-kcal    { color: var(--success); }
+    .goal-gain .goal-kcal        { color: #15803d; }
+    .goal-fast-gain .goal-kcal   { color: var(--purple); }
+
+    .goal-fast-loss .goal-sub  { color: #f87171; }
+    .goal-loss .goal-sub        { color: #fb923c; }
+    .goal-maintain .goal-sub    { color: #4ade80; }
+    .goal-gain .goal-sub        { color: #4ade80; }
+    .goal-fast-gain .goal-sub   { color: #a78bfa; }
+
+    /* ===== 목표 기간 ===== */
+    .target-result-box {
+      background: var(--warning-light);
+      border: 1.5px solid #fcd34d;
+      border-radius: var(--radius-sm);
+      padding: 1rem;
+    }
+
+    .target-result-box .tr-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      margin-bottom: 0.4rem;
+    }
+
+    .target-result-box .tr-row:last-child { margin-bottom: 0; }
+
+    .target-result-box .tr-label {
+      font-size: 0.82rem;
+      color: var(--gray-600);
+    }
+
+    .target-result-box .tr-value {
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: var(--warning);
+    }
+
+    .target-result-box .tr-note {
+      font-size: 0.72rem;
+      color: var(--gray-500);
+    }
+
+    .target-warning {
+      margin-top: 0.5rem;
+      padding: 0.5rem 0.75rem;
+      background: var(--danger-light);
+      border-radius: 6px;
+      font-size: 0.75rem;
+      color: var(--danger);
+      display: none;
+    }
+
+    .target-warning.show { display: block; }
+
+    /* ===== 매크로 ===== */
+    .macro-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 0.6rem;
+    }
+
+    .macro-card {
+      border-radius: var(--radius-sm);
+      padding: 0.85rem 0.5rem;
+      text-align: center;
+    }
+
+    .macro-protein { background: #fef3c7; }
+    .macro-carb    { background: var(--primary-light); }
+    .macro-fat     { background: #fce7f3; }
+
+    .macro-card .macro-name {
+      font-size: 0.75rem;
+      font-weight: 700;
+      margin-bottom: 0.3rem;
+    }
+
+    .macro-protein .macro-name { color: #d97706; }
+    .macro-carb    .macro-name { color: var(--primary); }
+    .macro-fat     .macro-name { color: #be185d; }
+
+    .macro-card .macro-g {
+      font-size: 1.4rem;
+      font-weight: 800;
+      line-height: 1.1;
+    }
+
+    .macro-protein .macro-g { color: #92400e; }
+    .macro-carb    .macro-g { color: var(--primary-dark); }
+    .macro-fat     .macro-g { color: #9d174d; }
+
+    .macro-card .macro-unit { font-size: 0.72rem; color: var(--gray-500); }
+    .macro-card .macro-pct  { font-size: 0.72rem; color: var(--gray-400); margin-top: 0.1rem; }
+
+    /* ===== BMI ===== */
+    .bmi-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+    }
+
+    .bmi-value-wrap { text-align: center; flex-shrink: 0; }
+
+    .bmi-value-wrap .bmi-num {
+      font-size: 2.2rem;
+      font-weight: 900;
+      line-height: 1;
+    }
+
+    .bmi-value-wrap .bmi-unit {
+      font-size: 0.75rem;
+      color: var(--gray-400);
+    }
+
+    .bmi-badge {
+      display: inline-block;
+      padding: 0.25rem 0.75rem;
+      border-radius: 999px;
+      font-size: 0.82rem;
+      font-weight: 700;
+      margin-top: 0.3rem;
+    }
+
+    .bmi-scale {
+      flex: 1;
+    }
+
+    .bmi-bar-wrap {
+      height: 10px;
+      border-radius: 999px;
+      background: linear-gradient(to right, #93c5fd 0%, #86efac 18.5%, #fcd34d 23%, #f87171 27.5%, #dc2626 100%);
+      position: relative;
+      margin-bottom: 0.4rem;
+    }
+
+    .bmi-indicator {
+      position: absolute;
+      top: -3px;
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background: #fff;
+      border: 2.5px solid var(--gray-700);
+      transform: translateX(-50%);
+      transition: left 0.5s ease;
+    }
+
+    .bmi-scale-labels {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.62rem;
+      color: var(--gray-400);
+    }
+
+    .bmi-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.78rem;
+      margin-top: 0.75rem;
+    }
+
+    .bmi-table th, .bmi-table td {
+      padding: 0.3rem 0.4rem;
+      border-bottom: 1px solid var(--gray-100);
+    }
+
+    .bmi-table th {
+      background: var(--gray-50);
+      font-weight: 600;
+      color: var(--gray-600);
+      text-align: left;
+    }
+
+    .bmi-table tr.current-bmi {
+      background: var(--primary-light);
+      font-weight: 700;
+    }
+
+    /* ===== 공식 설명 ===== */
+    .formula-section {
+      margin-top: 1.5rem;
+    }
+
+    .formula-section h2 {
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--gray-700);
+      margin-bottom: 0.75rem;
+    }
+
+    .formula-box {
+      background: var(--gray-50);
+      border: 1px solid var(--gray-200);
+      border-radius: var(--radius-sm);
+      padding: 0.85rem 1rem;
+      margin-bottom: 0.75rem;
+      font-size: 0.82rem;
+      color: var(--gray-700);
+    }
+
+    .formula-box h3 {
+      font-size: 0.85rem;
+      font-weight: 700;
+      margin-bottom: 0.4rem;
+      color: var(--gray-800);
+    }
+
+    .formula-box code {
+      display: block;
+      background: #fff;
+      border: 1px solid var(--gray-200);
+      border-radius: 4px;
+      padding: 0.35rem 0.5rem;
+      font-family: 'Courier New', monospace;
+      font-size: 0.78rem;
+      color: var(--primary-dark);
+      margin: 0.2rem 0;
+    }
+
+    .formula-box p { margin-top: 0.4rem; color: var(--gray-500); font-size: 0.78rem; }
+
+    /* ===== 푸터 ===== */
+    footer {
+      background: var(--gray-800);
+      color: var(--gray-400);
+      text-align: center;
+      padding: 1.5rem 1rem;
+      font-size: 0.78rem;
+      margin-top: 2rem;
+    }
+
+    footer a { color: var(--gray-300); text-decoration: none; }
+
+    /* ===== 반응형 ===== */
+    @media (min-width: 480px) {
+      header h1 { font-size: 2rem; }
+      .macro-card .macro-g { font-size: 1.6rem; }
+    }
+
+    @media (min-width: 640px) {
+      main { padding: 1.5rem; }
+      .card { padding: 1.5rem; }
+      header { padding: 2.5rem 1.5rem 2rem; }
+    }
+
+    @media (max-width: 380px) {
+      .form-grid { grid-template-columns: 1fr; }
+      .bmr-compare { grid-template-columns: 1fr; }
+      .macro-grid { grid-template-columns: 1fr; }
+      .bmi-row { flex-direction: column; }
+    }
+
+    /* ===== 애니메이션 ===== */
+    @keyframes fadeInUp {
+      from { opacity: 0; transform: translateY(10px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .fade-in { animation: fadeInUp 0.4s ease both; }
+
+    /* ===== 유틸 ===== */
+    .section-divider {
+      height: 1px;
+      background: var(--gray-100);
+      margin: 0.75rem 0;
+    }
+
+    .hint {
+      font-size: 0.75rem;
+      color: var(--gray-400);
+      margin-top: 0.2rem;
+    }
+
+    .no-target-msg {
+      text-align: center;
+      color: var(--gray-400);
+      font-size: 0.85rem;
+      padding: 1rem 0;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ===== 헤더 ===== -->
+  <header>
+    <h1>칼로리 계산기</h1>
+    <p>기초대사량(BMR)·TDEE·목표 칼로리를 한 번에 계산하세요</p>
+  </header>
+
+  <!-- AdSense 슬롯 1: 헤더 아래 -->
+  <!-- AdSense: publisher-id 입력 필요 -->
+  <div class="ad-slot" style="max-width:728px;margin:0.75rem auto;">
+    <div class="ad-slot-label">광고</div>
+    <!-- 실제 AdSense 코드를 아래에 삽입하세요 -->
+    <!-- <ins class="adsbygoogle" style="display:block" data-ad-client="ca-pub-XXXXXXXXXX"
+         data-ad-slot="XXXXXXXXXX" data-ad-format="auto" data-full-width-responsive="true"></ins>
+    <script>(adsbygoogle = window.adsbygoogle || []).push({});</script> -->
+    <span>AdSense 광고 (728×90)</span>
+  </div>
+
+  <main>
+
+    <!-- ===== 입력 폼 카드 ===== -->
+    <section class="card" aria-label="신체 정보 입력">
+      <div class="card-title">
+        <span class="icon" style="background:#dbeafe;">📋</span>
+        신체 정보 입력
+      </div>
+
+      <!-- 성별 토글 -->
+      <div class="gender-toggle" role="group" aria-label="성별 선택">
+        <button type="button" id="btn-male" class="active-male" onclick="setGender('male')">남성</button>
+        <button type="button" id="btn-female" onclick="setGender('female')">여성</button>
+      </div>
+
+      <div class="form-grid">
+
+        <!-- 나이 -->
+        <div class="form-group">
+          <label for="age">나이</label>
+          <div class="input-wrap">
+            <input type="number" id="age" placeholder="25" min="10" max="120" inputmode="numeric">
+            <span class="input-unit">세</span>
+          </div>
+          <span class="error-msg" id="err-age">10~120 사이 숫자를 입력하세요</span>
+        </div>
+
+        <!-- 키 -->
+        <div class="form-group">
+          <label for="height">키</label>
+          <div class="input-wrap">
+            <input type="number" id="height" placeholder="170" min="100" max="250" inputmode="numeric">
+            <span class="input-unit">cm</span>
+          </div>
+          <span class="error-msg" id="err-height">100~250 사이 숫자를 입력하세요</span>
+        </div>
+
+        <!-- 체중 -->
+        <div class="form-group">
+          <label for="weight">체중</label>
+          <div class="input-wrap">
+            <input type="number" id="weight" placeholder="70" min="20" max="300" step="0.1" inputmode="decimal">
+            <span class="input-unit">kg</span>
+          </div>
+          <span class="error-msg" id="err-weight">20~300 사이 숫자를 입력하세요</span>
+        </div>
+
+        <!-- 활동량 -->
+        <div class="form-group">
+          <label for="activity">활동 수준</label>
+          <div class="input-wrap">
+            <select id="activity">
+              <option value="1.2">거의 안 움직임 (사무직)</option>
+              <option value="1.375">가벼운 활동 (주 1~3회)</option>
+              <option value="1.55" selected>보통 활동 (주 3~5회)</option>
+              <option value="1.725">활동적 (주 6~7회)</option>
+              <option value="1.9">매우 활동적 (하루 2회+)</option>
+            </select>
+          </div>
+        </div>
+
+      </div>
+
+      <div class="section-divider" style="margin-top:1rem;"></div>
+      <p style="font-size:0.8rem;color:var(--gray-500);margin-bottom:0.75rem;font-weight:600;">목표 설정 (선택)</p>
+
+      <div class="form-grid">
+
+        <!-- 목표 체중 -->
+        <div class="form-group">
+          <label for="target-weight">목표 체중</label>
+          <div class="input-wrap">
+            <input type="number" id="target-weight" placeholder="65" min="20" max="300" step="0.1" inputmode="decimal">
+            <span class="input-unit">kg</span>
+          </div>
+          <span class="error-msg" id="err-target-weight">20~300 사이 숫자를 입력하세요</span>
+        </div>
+
+        <!-- 목표 기간 -->
+        <div class="form-group">
+          <label for="target-weeks">목표 기간</label>
+          <div class="input-wrap">
+            <input type="number" id="target-weeks" placeholder="12" min="1" max="104" inputmode="numeric">
+            <span class="input-unit">주</span>
+          </div>
+          <span class="error-msg" id="err-target-weeks">1~104주 사이를 입력하세요</span>
+          <span class="hint">최대 2년(104주)</span>
+        </div>
+
+      </div>
+
+      <button class="btn-calc" onclick="calculate()">계산하기</button>
+    </section>
+
+    <!-- ===== 결과 영역 ===== -->
+    <div id="results">
+
+      <!-- 1. BMR 탭 비교 -->
+      <section class="card fade-in" aria-label="기초대사량 비교">
+        <div class="card-title">
+          <span class="icon" style="background:#dcfce7;">🔥</span>
+          기초대사량 (BMR)
+        </div>
+        <div class="tab-wrap" role="tablist">
+          <button class="tab-btn active" id="tab-mifflin" role="tab" aria-selected="true"
+                  onclick="setFormula('mifflin')">Mifflin (표준)</button>
+          <button class="tab-btn" id="tab-harris" role="tab" aria-selected="false"
+                  onclick="setFormula('harris')">Harris-Benedict</button>
+        </div>
+        <div class="bmr-compare">
+          <div class="bmr-card active-formula" id="bmr-card-mifflin">
+            <div class="formula-name">Mifflin-St Jeor (1990)</div>
+            <div class="bmr-value" id="bmr-mifflin">—</div>
+            <div class="bmr-unit">kcal / 일</div>
+            <div class="bmr-note">현재 표준 공식</div>
+          </div>
+          <div class="bmr-card" id="bmr-card-harris">
+            <div class="formula-name">Harris-Benedict (1984)</div>
+            <div class="bmr-value" id="bmr-harris">—</div>
+            <div class="bmr-unit">kcal / 일</div>
+            <div class="bmr-note">약 5% 과대 추정 경향</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 2. TDEE -->
+      <section class="card fade-in" aria-label="TDEE 총 일일 에너지 소비량">
+        <div class="card-title">
+          <span class="icon" style="background:#fef3c7;">⚡</span>
+          TDEE — 총 일일 에너지 소비량
+        </div>
+        <div class="tdee-big">
+          <div class="label">하루 총 칼로리 소비량</div>
+          <div class="value" id="tdee-value">—</div>
+          <div class="unit">kcal / 일</div>
+        </div>
+        <p class="tdee-formula-note" id="tdee-note">선택 공식 기준</p>
+      </section>
+
+      <!-- AdSense 슬롯 2: TDEE 결과 아래 -->
+      <!-- AdSense: publisher-id 입력 필요 -->
+      <div class="ad-slot">
+        <div class="ad-slot-label">광고</div>
+        <!-- <ins class="adsbygoogle" style="display:block" data-ad-client="ca-pub-XXXXXXXXXX"
+             data-ad-slot="XXXXXXXXXX" data-ad-format="auto" data-full-width-responsive="true"></ins>
+        <script>(adsbygoogle = window.adsbygoogle || []).push({});</script> -->
+        <span>AdSense 광고 (반응형)</span>
+      </div>
+
+      <!-- 3. 목표별 칼로리 5단계 -->
+      <section class="card fade-in" aria-label="목표별 권장 칼로리">
+        <div class="card-title">
+          <span class="icon" style="background:#ede9fe;">🎯</span>
+          목표별 권장 칼로리
+        </div>
+        <div class="goal-grid">
+          <div class="goal-item goal-fast-loss">
+            <div>
+              <div class="goal-label">빠른 감량</div>
+              <div class="goal-sub">약 -1 kg/주</div>
+            </div>
+            <div style="text-align:right;">
+              <span class="goal-kcal" id="goal-fast-loss">—</span>
+              <span class="goal-unit"> kcal</span>
+            </div>
+          </div>
+          <div class="goal-item goal-loss">
+            <div>
+              <div class="goal-label">감량</div>
+              <div class="goal-sub">약 -0.5 kg/주</div>
+            </div>
+            <div style="text-align:right;">
+              <span class="goal-kcal" id="goal-loss">—</span>
+              <span class="goal-unit"> kcal</span>
+            </div>
+          </div>
+          <div class="goal-item goal-maintain">
+            <div>
+              <div class="goal-label">유지</div>
+              <div class="goal-sub">현재 체중 유지</div>
+            </div>
+            <div style="text-align:right;">
+              <span class="goal-kcal" id="goal-maintain">—</span>
+              <span class="goal-unit"> kcal</span>
+            </div>
+          </div>
+          <div class="goal-item goal-gain">
+            <div>
+              <div class="goal-label">증량</div>
+              <div class="goal-sub">약 +0.5 kg/주</div>
+            </div>
+            <div style="text-align:right;">
+              <span class="goal-kcal" id="goal-gain">—</span>
+              <span class="goal-unit"> kcal</span>
+            </div>
+          </div>
+          <div class="goal-item goal-fast-gain">
+            <div>
+              <div class="goal-label">빠른 증량</div>
+              <div class="goal-sub">약 +1 kg/주</div>
+            </div>
+            <div style="text-align:right;">
+              <span class="goal-kcal" id="goal-fast-gain">—</span>
+              <span class="goal-unit"> kcal</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 4. 목표 기간 계산 -->
+      <section class="card fade-in" aria-label="목표 기간 계산">
+        <div class="card-title">
+          <span class="icon" style="background:#fce7f3;">📅</span>
+          목표 기간 계산
+        </div>
+        <div id="target-period-result">
+          <p class="no-target-msg">위 입력 폼에서 목표 체중과 목표 기간을 입력하면<br>일일 권장 칼로리를 자동으로 계산합니다.</p>
+        </div>
+      </section>
+
+      <!-- 5. 탄단지 매크로 -->
+      <section class="card fade-in" aria-label="탄단지 매크로 영양소">
+        <div class="card-title">
+          <span class="icon" style="background:#fef9c3;">🥗</span>
+          탄단지 매크로 (TDEE 기준)
+        </div>
+        <div class="macro-grid">
+          <div class="macro-card macro-protein">
+            <div class="macro-name">단백질</div>
+            <div class="macro-g" id="macro-protein">—</div>
+            <div class="macro-unit">g / 일</div>
+            <div class="macro-pct">30%</div>
+          </div>
+          <div class="macro-card macro-carb">
+            <div class="macro-name">탄수화물</div>
+            <div class="macro-g" id="macro-carb">—</div>
+            <div class="macro-unit">g / 일</div>
+            <div class="macro-pct">40%</div>
+          </div>
+          <div class="macro-card macro-fat">
+            <div class="macro-name">지방</div>
+            <div class="macro-g" id="macro-fat">—</div>
+            <div class="macro-unit">g / 일</div>
+            <div class="macro-pct">30%</div>
+          </div>
+        </div>
+        <p class="hint" style="margin-top:0.5rem;text-align:center;">단백질 30% / 탄수화물 40% / 지방 30% 비율 기준</p>
+      </section>
+
+      <!-- 6. BMI 동시 출력 -->
+      <section class="card fade-in" aria-label="BMI 체질량지수">
+        <div class="card-title">
+          <span class="icon" style="background:#e0f2fe;">⚖️</span>
+          BMI (체질량지수)
+        </div>
+        <div class="bmi-row">
+          <div class="bmi-value-wrap">
+            <div class="bmi-num" id="bmi-num">—</div>
+            <div class="bmi-unit">kg/m²</div>
+            <div>
+              <span class="bmi-badge" id="bmi-badge">—</span>
+            </div>
+          </div>
+          <div class="bmi-scale">
+            <div class="bmi-bar-wrap">
+              <div class="bmi-indicator" id="bmi-indicator" style="left:0%;"></div>
+            </div>
+            <div class="bmi-scale-labels">
+              <span>저체중</span>
+              <span>정상</span>
+              <span>과체중</span>
+              <span>비만</span>
+            </div>
+          </div>
+        </div>
+        <table class="bmi-table" aria-label="대한비만학회 BMI 기준">
+          <thead>
+            <tr>
+              <th>분류</th>
+              <th>BMI 범위</th>
+              <th>판정</th>
+            </tr>
+          </thead>
+          <tbody id="bmi-table-body">
+            <tr>
+              <td>저체중</td>
+              <td>18.5 미만</td>
+              <td>체중 부족</td>
+            </tr>
+            <tr>
+              <td>정상</td>
+              <td>18.5 ~ 22.9</td>
+              <td>정상 범위</td>
+            </tr>
+            <tr>
+              <td>비만전단계</td>
+              <td>23.0 ~ 24.9</td>
+              <td>주의 필요</td>
+            </tr>
+            <tr>
+              <td>1단계 비만</td>
+              <td>25.0 ~ 29.9</td>
+              <td>경도 비만</td>
+            </tr>
+            <tr>
+              <td>2단계 비만</td>
+              <td>30.0 ~ 34.9</td>
+              <td>중등도 비만</td>
+            </tr>
+            <tr>
+              <td>3단계 비만</td>
+              <td>35.0 이상</td>
+              <td>고도 비만</td>
+            </tr>
+          </tbody>
+        </table>
+        <p class="hint" style="margin-top:0.5rem;">※ 대한비만학회 2022 기준</p>
+      </section>
+
+    </div><!-- /#results -->
+
+    <!-- ===== 공식 설명 섹션 ===== -->
+    <section class="formula-section" aria-label="계산 공식 설명">
+      <h2>계산 공식 안내</h2>
+
+      <div class="formula-box">
+        <h3>Mifflin-St Jeor 공식 (1990, 현재 표준)</h3>
+        <code>남성 BMR = 10 × 체중(kg) + 6.25 × 키(cm) − 5 × 나이 + 5</code>
+        <code>여성 BMR = 10 × 체중(kg) + 6.25 × 키(cm) − 5 × 나이 − 161</code>
+        <p>현재 가장 널리 사용되는 기초대사량 계산 공식으로, 실측값 대비 10% 오차 이내 정확도를 보입니다.</p>
+      </div>
+
+      <div class="formula-box">
+        <h3>Harris-Benedict 개정판 (Roza &amp; Shizgal, 1984)</h3>
+        <code>남성 BMR = 88.362 + 13.397 × 체중(kg) + 4.799 × 키(cm) − 5.677 × 나이</code>
+        <code>여성 BMR = 447.593 + 9.247 × 체중(kg) + 3.098 × 키(cm) − 4.330 × 나이</code>
+        <p>오랜 역사를 가진 공식으로, 현대인 기준으로는 실제보다 약 5% 높게 추정하는 경향이 있습니다.</p>
+      </div>
+
+      <div class="formula-box">
+        <h3>TDEE 활동 계수</h3>
+        <p>TDEE = BMR × 활동 계수</p>
+        <p>거의 안 움직임 1.2 / 가벼운 활동 1.375 / 보통 활동 1.55 / 활동적 1.725 / 매우 활동적 1.9</p>
+      </div>
+
+      <div class="formula-box">
+        <h3>목표 기간 계산</h3>
+        <code>일일 칼로리 적자·잉여 = (현재 체중 − 목표 체중) × 7,700 ÷ 목표 기간(일)</code>
+        <code>일일 권장 칼로리 = TDEE − 적자(또는 + 잉여)</code>
+        <p>1kg의 지방을 감량하거나 증량하는 데 약 7,700 kcal가 필요합니다.</p>
+      </div>
+
+      <p class="hint" style="margin-top:0.5rem;">※ 본 계산기는 참고용이며 의학적 진단을 대체하지 않습니다. 건강 상태에 따라 전문의와 상담하세요.</p>
+    </section>
+
+  </main>
+
+  <!-- AdSense 슬롯 3: 푸터 위 -->
+  <!-- AdSense: publisher-id 입력 필요 -->
+  <div class="ad-slot" style="max-width:728px;margin:1rem auto 0;">
+    <div class="ad-slot-label">광고</div>
+    <!-- <ins class="adsbygoogle" style="display:block" data-ad-client="ca-pub-XXXXXXXXXX"
+         data-ad-slot="XXXXXXXXXX" data-ad-format="auto" data-full-width-responsive="true"></ins>
+    <script>(adsbygoogle = window.adsbygoogle || []).push({});</script> -->
+    <span>AdSense 광고 (728×90)</span>
+  </div>
+
+  <footer>
+    <p>칼로리 계산기 &mdash; Mifflin-St Jeor / Harris-Benedict 공식 기반</p>
+    <p style="margin-top:0.4rem;">본 계산기는 참고용입니다. 전문적인 영양·의학 조언은 전문가에게 문의하세요.</p>
+  </footer>
+
+  <script>
+    /* ===================================================
+       전역 상태
+    =================================================== */
+    let gender = 'male';
+    let activeFormula = 'mifflin'; // 'mifflin' | 'harris'
+
+    /* ===================================================
+       성별 선택
+    =================================================== */
+    function setGender(g) {
+      gender = g;
+      const btnMale   = document.getElementById('btn-male');
+      const btnFemale = document.getElementById('btn-female');
+      if (g === 'male') {
+        btnMale.className   = 'active-male';
+        btnFemale.className = '';
+      } else {
+        btnMale.className   = '';
+        btnFemale.className = 'active-female';
+      }
+      // 이미 결과가 표시 중이면 실시간 재계산
+      if (document.getElementById('results').style.display !== 'none') {
+        calculate();
+      }
+    }
+
+    /* ===================================================
+       공식 탭 전환
+    =================================================== */
+    function setFormula(formula) {
+      activeFormula = formula;
+
+      const tabMifflin = document.getElementById('tab-mifflin');
+      const tabHarris  = document.getElementById('tab-harris');
+      const cardMifflin = document.getElementById('bmr-card-mifflin');
+      const cardHarris  = document.getElementById('bmr-card-harris');
+
+      if (formula === 'mifflin') {
+        tabMifflin.classList.add('active');    tabMifflin.setAttribute('aria-selected', 'true');
+        tabHarris.classList.remove('active');  tabHarris.setAttribute('aria-selected', 'false');
+        cardMifflin.classList.add('active-formula');
+        cardHarris.classList.remove('active-formula');
+      } else {
+        tabHarris.classList.add('active');     tabHarris.setAttribute('aria-selected', 'true');
+        tabMifflin.classList.remove('active'); tabMifflin.setAttribute('aria-selected', 'false');
+        cardHarris.classList.add('active-formula');
+        cardMifflin.classList.remove('active-formula');
+      }
+
+      // 이미 결과가 있으면 TDEE·목표·매크로를 재계산해서 갱신
+      if (document.getElementById('results').style.display !== 'none') {
+        updateDerivedResults();
+      }
+    }
+
+    /* ===================================================
+       입력 유효성 검사
+    =================================================== */
+    function validateInput(id, min, max, errId) {
+      const el  = document.getElementById(id);
+      const err = document.getElementById(errId);
+      const val = parseFloat(el.value);
+      if (!el.value || isNaN(val) || val < min || val > max) {
+        el.classList.add('error');
+        err.classList.add('show');
+        return null;
+      }
+      el.classList.remove('error');
+      err.classList.remove('show');
+      return val;
+    }
+
+    function clearError(id, errId) {
+      document.getElementById(id).classList.remove('error');
+      document.getElementById(errId).classList.remove('show');
+    }
+
+    /* ===================================================
+       BMR 계산 함수
+    =================================================== */
+    function calcBMR(w, h, a, g) {
+      const mifflin = g === 'male'
+        ? 10 * w + 6.25 * h - 5 * a + 5
+        : 10 * w + 6.25 * h - 5 * a - 161;
+
+      const harris = g === 'male'
+        ? 88.362 + 13.397 * w + 4.799 * h - 5.677 * a
+        : 447.593 + 9.247 * w + 3.098 * h - 4.330 * a;
+
+      return { mifflin: Math.round(mifflin), harris: Math.round(harris) };
+    }
+
+    /* ===================================================
+       BMI 계산 및 대한비만학회 판정
+    =================================================== */
+    function calcBMI(w, h) {
+      const hm  = h / 100;
+      return w / (hm * hm);
+    }
+
+    function getBMIInfo(bmi) {
+      if (bmi < 18.5) return { label: '저체중',       color: '#93c5fd', bg: '#dbeafe', text: '#1e40af', rowIdx: 0 };
+      if (bmi < 23.0) return { label: '정상',         color: '#86efac', bg: '#dcfce7', text: '#15803d', rowIdx: 1 };
+      if (bmi < 25.0) return { label: '비만전단계',   color: '#fcd34d', bg: '#fef3c7', text: '#92400e', rowIdx: 2 };
+      if (bmi < 30.0) return { label: '1단계 비만',   color: '#f87171', bg: '#fee2e2', text: '#991b1b', rowIdx: 3 };
+      if (bmi < 35.0) return { label: '2단계 비만',   color: '#ef4444', bg: '#fee2e2', text: '#7f1d1d', rowIdx: 4 };
+      return            { label: '3단계 비만',       color: '#dc2626', bg: '#fee2e2', text: '#450a0a', rowIdx: 5 };
+    }
+
+    // BMI 값을 막대 위치 퍼센트로 변환 (10~40 범위를 0~100%에 매핑)
+    function bmiToPercent(bmi) {
+      const MIN_BMI = 10, MAX_BMI = 40;
+      const pct = ((bmi - MIN_BMI) / (MAX_BMI - MIN_BMI)) * 100;
+      return Math.min(Math.max(pct, 2), 98);
+    }
+
+    /* ===================================================
+       결과 렌더링: 파생 결과만 갱신 (TDEE 이후)
+    =================================================== */
+    let cachedBMR = null;
+    let cachedTDEE_mifflin = null;
+    let cachedTDEE_harris  = null;
+    let cachedWeight = null;
+    let cachedTargetWeight = null;
+    let cachedTargetWeeks  = null;
+
+    function updateDerivedResults() {
+      if (!cachedBMR) return;
+
+      const actFactor = parseFloat(document.getElementById('activity').value);
+      const tdee_m = Math.round(cachedBMR.mifflin * actFactor);
+      const tdee_h = Math.round(cachedBMR.harris  * actFactor);
+      cachedTDEE_mifflin = tdee_m;
+      cachedTDEE_harris  = tdee_h;
+
+      const tdee = activeFormula === 'mifflin' ? tdee_m : tdee_h;
+      const formulaName = activeFormula === 'mifflin' ? 'Mifflin-St Jeor 공식' : 'Harris-Benedict 공식';
+
+      // TDEE
+      document.getElementById('tdee-value').textContent = tdee.toLocaleString();
+      document.getElementById('tdee-note').textContent =
+        `${formulaName} 기준 · 활동 계수 ${actFactor}`;
+
+      // 목표별 칼로리
+      document.getElementById('goal-fast-loss').textContent = Math.max(0, tdee - 1000).toLocaleString();
+      document.getElementById('goal-loss').textContent      = Math.max(0, tdee - 500).toLocaleString();
+      document.getElementById('goal-maintain').textContent  = tdee.toLocaleString();
+      document.getElementById('goal-gain').textContent      = (tdee + 500).toLocaleString();
+      document.getElementById('goal-fast-gain').textContent = (tdee + 1000).toLocaleString();
+
+      // 목표 기간 계산
+      renderTargetPeriod(tdee);
+
+      // 탄단지 매크로
+      const protein = Math.round((tdee * 0.30) / 4);
+      const carb    = Math.round((tdee * 0.40) / 4);
+      const fat     = Math.round((tdee * 0.30) / 9);
+      document.getElementById('macro-protein').textContent = protein;
+      document.getElementById('macro-carb').textContent    = carb;
+      document.getElementById('macro-fat').textContent     = fat;
+    }
+
+    /* ===================================================
+       목표 기간 결과 렌더링
+    =================================================== */
+    function renderTargetPeriod(tdee) {
+      const container = document.getElementById('target-period-result');
+      const tw = cachedTargetWeight;
+      const wk = cachedTargetWeeks;
+      const cw = cachedWeight;
+
+      if (tw === null || wk === null) {
+        container.innerHTML = '<p class="no-target-msg">위 입력 폼에서 목표 체중과 목표 기간을 입력하면<br>일일 권장 칼로리를 자동으로 계산합니다.</p>';
+        return;
+      }
+
+      const days        = wk * 7;
+      const weightDiff  = cw - tw;                         // 양수 = 감량, 음수 = 증량
+      const dailyDelta  = (weightDiff * 7700) / days;      // kcal/일 적자(+) or 잉여(-)
+      const recommended = Math.round(tdee - dailyDelta);
+
+      const isLoss = weightDiff > 0;
+      const diffLabel = isLoss ? '감량' : '증량';
+      const absWeight = Math.abs(weightDiff).toFixed(1);
+      const absDelta  = Math.abs(dailyDelta).toFixed(0);
+
+      // 권장 범위 경고: 1200 kcal(여) / 1500 kcal(남) 미만이거나 TDEE+1000 초과
+      const minSafe = gender === 'male' ? 1500 : 1200;
+      const maxSafe = tdee + 1000;
+      const isSafeMin = recommended < minSafe;
+      const isSafeMax = recommended > maxSafe;
+
+      container.innerHTML = `
+        <div class="target-result-box">
+          <div class="tr-row">
+            <span class="tr-label">목표 ${diffLabel}</span>
+            <span class="tr-value">${absWeight} kg</span>
+          </div>
+          <div class="tr-row">
+            <span class="tr-label">기간</span>
+            <span class="tr-value">${wk}주 (${days}일)</span>
+          </div>
+          <div class="tr-row">
+            <span class="tr-label">일일 칼로리 ${isLoss ? '적자' : '잉여'}</span>
+            <span class="tr-value">${absDelta} kcal</span>
+          </div>
+          <div class="tr-row" style="border-top:1px solid #fcd34d;padding-top:0.5rem;margin-top:0.3rem;">
+            <span class="tr-label" style="font-weight:700;">일일 권장 칼로리</span>
+            <span class="tr-value" style="font-size:1.3rem;">${recommended.toLocaleString()} kcal</span>
+          </div>
+        </div>
+        <div class="target-warning ${(isSafeMin || isSafeMax) ? 'show' : ''}" id="target-warn">
+          ${isSafeMin
+            ? `⚠️ 일일 ${recommended.toLocaleString()} kcal는 최소 안전 섭취량(${minSafe} kcal) 미만입니다. 기간을 늘리거나 목표를 조정하세요.`
+            : `⚠️ 일일 ${recommended.toLocaleString()} kcal는 TDEE보다 1,000 kcal 이상 높습니다. 기간을 늘리거나 목표를 조정하세요.`}
+        </div>
+      `;
+    }
+
+    /* ===================================================
+       메인 계산 함수
+    =================================================== */
+    function calculate() {
+      // 유효성 검사
+      const age    = validateInput('age',    10,  120, 'err-age');
+      const height = validateInput('height', 100, 250, 'err-height');
+      const weight = validateInput('weight', 20,  300, 'err-weight');
+
+      // 목표 체중/기간은 선택 입력
+      let targetWeight = null;
+      let targetWeeks  = null;
+
+      const twEl = document.getElementById('target-weight');
+      const wkEl = document.getElementById('target-weeks');
+
+      if (twEl.value.trim() !== '') {
+        targetWeight = validateInput('target-weight', 20, 300, 'err-target-weight');
+        if (targetWeight === null) return;
+      } else {
+        clearError('target-weight', 'err-target-weight');
+      }
+
+      if (wkEl.value.trim() !== '') {
+        targetWeeks = validateInput('target-weeks', 1, 104, 'err-target-weeks');
+        if (targetWeeks === null) return;
+      } else {
+        clearError('target-weeks', 'err-target-weeks');
+      }
+
+      // 필수 입력 누락 시 종료
+      if (age === null || height === null || weight === null) return;
+
+      // 목표 체중·기간 중 하나만 입력된 경우 안내
+      if ((twEl.value.trim() !== '') !== (wkEl.value.trim() !== '')) {
+        if (twEl.value.trim() !== '' && wkEl.value.trim() === '') {
+          wkEl.focus();
+          wkEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          document.getElementById('err-target-weeks').textContent = '목표 기간도 함께 입력해 주세요.';
+          document.getElementById('err-target-weeks').classList.add('show');
+          document.getElementById('target-weeks').classList.add('error');
+          return;
+        }
+        if (wkEl.value.trim() !== '' && twEl.value.trim() === '') {
+          twEl.focus();
+          twEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          document.getElementById('err-target-weight').textContent = '목표 체중도 함께 입력해 주세요.';
+          document.getElementById('err-target-weight').classList.add('show');
+          document.getElementById('target-weight').classList.add('error');
+          return;
+        }
+      }
+
+      // 캐시 갱신
+      cachedWeight       = weight;
+      cachedTargetWeight = targetWeight;
+      cachedTargetWeeks  = targetWeeks;
+
+      // BMR 계산
+      const bmr = calcBMR(weight, height, age, gender);
+      cachedBMR = bmr;
+
+      document.getElementById('bmr-mifflin').textContent = bmr.mifflin.toLocaleString();
+      document.getElementById('bmr-harris').textContent  = bmr.harris.toLocaleString();
+
+      // BMI 계산
+      const bmi     = calcBMI(weight, height);
+      const bmiInfo = getBMIInfo(bmi);
+      const bmiNum  = bmi.toFixed(1);
+
+      document.getElementById('bmi-num').textContent   = bmiNum;
+      document.getElementById('bmi-num').style.color   = bmiInfo.color;
+      const badge = document.getElementById('bmi-badge');
+      badge.textContent        = bmiInfo.label;
+      badge.style.background   = bmiInfo.bg;
+      badge.style.color        = bmiInfo.text;
+
+      // BMI 인디케이터 위치 갱신
+      const pct = bmiToPercent(bmi);
+      document.getElementById('bmi-indicator').style.left = pct + '%';
+
+      // BMI 표 현재 행 강조
+      const rows = document.querySelectorAll('#bmi-table-body tr');
+      rows.forEach((r, i) => {
+        r.classList.toggle('current-bmi', i === bmiInfo.rowIdx);
+      });
+
+      // TDEE 및 파생 결과 갱신
+      updateDerivedResults();
+
+      // 결과 섹션 표시
+      const resultsEl = document.getElementById('results');
+      if (resultsEl.style.display === 'none' || resultsEl.style.display === '') {
+        resultsEl.style.display = 'block';
+        resultsEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }
+
+    /* ===================================================
+       실시간 계산: 활동량 변경 시 파생 결과 갱신
+    =================================================== */
+    document.getElementById('activity').addEventListener('change', function () {
+      if (cachedBMR) updateDerivedResults();
+    });
+
+    /* ===================================================
+       Enter 키로 계산 실행
+    =================================================== */
+    ['age', 'height', 'weight', 'target-weight', 'target-weeks'].forEach(function (id) {
+      document.getElementById(id).addEventListener('keydown', function (e) {
+        if (e.key === 'Enter') calculate();
+      });
+    });
+  </script>
+
+</body>
+</html>
