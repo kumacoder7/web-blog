@@ -1,0 +1,1254 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>할인 계산기 - 할인가·할인율·원가 역산 즉시 계산</title>
+  <meta name="description" content="원가와 할인율로 할인가를 계산하거나, 원가·할인가로 할인율을 역산합니다. 중복 할인 계산 포함. 무료 할인 계산기.">
+  <style>
+    /* === 기본 리셋 & 변수 === */
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    :root {
+      --primary: #2563eb;
+      --primary-dark: #1d4ed8;
+      --primary-light: #dbeafe;
+      --success: #16a34a;
+      --success-light: #dcfce7;
+      --warning: #d97706;
+      --warning-light: #fef3c7;
+      --error: #dc2626;
+      --error-light: #fee2e2;
+      --gray-50: #f9fafb;
+      --gray-100: #f3f4f6;
+      --gray-200: #e5e7eb;
+      --gray-300: #d1d5db;
+      --gray-400: #9ca3af;
+      --gray-500: #6b7280;
+      --gray-600: #4b5563;
+      --gray-700: #374151;
+      --gray-800: #1f2937;
+      --gray-900: #111827;
+      --radius: 8px;
+      --radius-lg: 12px;
+      --shadow-sm: 0 1px 2px rgba(0,0,0,0.05);
+      --shadow: 0 1px 3px rgba(0,0,0,0.1), 0 1px 2px rgba(0,0,0,0.06);
+      --shadow-md: 0 4px 6px rgba(0,0,0,0.07), 0 2px 4px rgba(0,0,0,0.06);
+      --transition: 0.18s ease;
+    }
+
+    html { font-size: 16px; scroll-behavior: smooth; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Noto Sans KR', 'Malgun Gothic', sans-serif;
+      background: var(--gray-50);
+      color: var(--gray-800);
+      line-height: 1.6;
+      min-height: 100vh;
+    }
+
+    /* === 레이아웃 === */
+    .site-header {
+      background: #fff;
+      border-bottom: 1px solid var(--gray-200);
+      padding: 14px 16px;
+    }
+
+    .site-header-inner {
+      max-width: 720px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .site-logo {
+      font-size: 0.9rem;
+      font-weight: 700;
+      color: var(--primary);
+      text-decoration: none;
+    }
+
+    .site-nav {
+      font-size: 0.8rem;
+      color: var(--gray-500);
+    }
+
+    main {
+      max-width: 720px;
+      margin: 0 auto;
+      padding: 0 16px 40px;
+    }
+
+    /* === AdSense 슬롯 === */
+    .ad-slot {
+      background: var(--gray-100);
+      border: 1px dashed var(--gray-300);
+      border-radius: var(--radius);
+      padding: 12px;
+      text-align: center;
+      color: var(--gray-400);
+      font-size: 0.75rem;
+      min-height: 90px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 16px 0;
+    }
+
+    /* === 히어로 섹션 === */
+    .hero {
+      padding: 28px 0 8px;
+      text-align: center;
+    }
+
+    .hero h1 {
+      font-size: 1.75rem;
+      font-weight: 800;
+      color: var(--gray-900);
+      margin-bottom: 8px;
+      line-height: 1.3;
+    }
+
+    .hero p {
+      font-size: 0.95rem;
+      color: var(--gray-500);
+      max-width: 480px;
+      margin: 0 auto;
+    }
+
+    /* === 탭 네비게이션 === */
+    .tab-nav {
+      display: flex;
+      gap: 0;
+      background: var(--gray-100);
+      border-radius: var(--radius-lg);
+      padding: 4px;
+      margin: 20px 0 0;
+    }
+
+    .tab-btn {
+      flex: 1;
+      padding: 10px 12px;
+      border: none;
+      background: transparent;
+      border-radius: calc(var(--radius-lg) - 4px);
+      font-size: 0.875rem;
+      font-weight: 600;
+      color: var(--gray-500);
+      cursor: pointer;
+      transition: all var(--transition);
+      white-space: nowrap;
+    }
+
+    .tab-btn.active {
+      background: #fff;
+      color: var(--primary);
+      box-shadow: var(--shadow-sm);
+    }
+
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+
+    /* === 카드 === */
+    .card {
+      background: #fff;
+      border: 1px solid var(--gray-200);
+      border-radius: var(--radius-lg);
+      padding: 20px;
+      margin-top: 16px;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .card-title {
+      font-size: 0.8rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--gray-400);
+      margin-bottom: 14px;
+    }
+
+    /* === 모드 선택 (기본 계산) === */
+    .mode-group {
+      display: flex;
+      gap: 6px;
+      margin-bottom: 18px;
+      flex-wrap: wrap;
+    }
+
+    .mode-btn {
+      flex: 1;
+      min-width: 0;
+      padding: 9px 8px;
+      border: 2px solid var(--gray-200);
+      background: #fff;
+      border-radius: var(--radius);
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--gray-600);
+      cursor: pointer;
+      transition: all var(--transition);
+      text-align: center;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .mode-btn.active {
+      border-color: var(--primary);
+      background: var(--primary-light);
+      color: var(--primary-dark);
+    }
+
+    /* === 통화 선택 === */
+    .currency-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+
+    .currency-label {
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--gray-600);
+      white-space: nowrap;
+    }
+
+    .currency-select {
+      padding: 8px 12px;
+      border: 1.5px solid var(--gray-200);
+      border-radius: var(--radius);
+      font-size: 0.9rem;
+      color: var(--gray-800);
+      background: #fff;
+      cursor: pointer;
+      outline: none;
+      transition: border-color var(--transition);
+    }
+
+    .currency-select:focus {
+      border-color: var(--primary);
+    }
+
+    /* === 입력 폼 === */
+    .input-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 4px;
+    }
+
+    .input-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .input-group label {
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: var(--gray-600);
+    }
+
+    .input-wrapper {
+      position: relative;
+    }
+
+    .input-prefix {
+      position: absolute;
+      left: 11px;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: var(--gray-500);
+      pointer-events: none;
+      user-select: none;
+    }
+
+    .input-suffix {
+      position: absolute;
+      right: 11px;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: var(--gray-500);
+      pointer-events: none;
+      user-select: none;
+    }
+
+    .input-field {
+      width: 100%;
+      padding: 10px 11px;
+      border: 1.5px solid var(--gray-200);
+      border-radius: var(--radius);
+      font-size: 1rem;
+      color: var(--gray-900);
+      background: #fff;
+      outline: none;
+      transition: border-color var(--transition), box-shadow var(--transition);
+      -webkit-appearance: none;
+      appearance: none;
+    }
+
+    .input-field:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(37,99,235,0.12);
+    }
+
+    .input-field.has-prefix { padding-left: 28px; }
+    .input-field.has-suffix { padding-right: 32px; }
+
+    .input-field.error {
+      border-color: var(--error);
+      box-shadow: 0 0 0 3px rgba(220,38,38,0.1);
+    }
+
+    .error-msg {
+      font-size: 0.76rem;
+      color: var(--error);
+      margin-top: 4px;
+      min-height: 1em;
+    }
+
+    /* === 결과 영역 === */
+    .result-section {
+      margin-top: 16px;
+    }
+
+    .result-box {
+      background: var(--primary-light);
+      border: 1.5px solid #93c5fd;
+      border-radius: var(--radius-lg);
+      padding: 16px;
+    }
+
+    .result-box.success {
+      background: var(--success-light);
+      border-color: #86efac;
+    }
+
+    .result-main {
+      display: flex;
+      align-items: baseline;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .result-label {
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: var(--gray-600);
+      margin-bottom: 4px;
+    }
+
+    .result-value {
+      font-size: 1.6rem;
+      font-weight: 800;
+      color: var(--primary-dark);
+      line-height: 1.2;
+    }
+
+    .result-box.success .result-value {
+      color: var(--success);
+    }
+
+    .result-sub {
+      margin-top: 10px;
+      display: flex;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+
+    .result-sub-item {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .result-sub-label {
+      font-size: 0.75rem;
+      color: var(--gray-500);
+      font-weight: 600;
+    }
+
+    .result-sub-value {
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: var(--gray-700);
+    }
+
+    .result-empty {
+      text-align: center;
+      padding: 20px;
+      color: var(--gray-400);
+      font-size: 0.9rem;
+    }
+
+    /* === 복사 버튼 === */
+    .copy-btn {
+      margin-top: 12px;
+      padding: 8px 16px;
+      background: var(--primary);
+      color: #fff;
+      border: none;
+      border-radius: var(--radius);
+      font-size: 0.82rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background var(--transition), transform var(--transition);
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .copy-btn:hover { background: var(--primary-dark); }
+    .copy-btn:active { transform: scale(0.97); }
+    .copy-btn.copied { background: var(--success); }
+
+    /* === 중복 할인 비교 === */
+    .compare-box {
+      margin-top: 12px;
+      background: var(--warning-light);
+      border: 1.5px solid #fcd34d;
+      border-radius: var(--radius);
+      padding: 12px 14px;
+    }
+
+    .compare-title {
+      font-size: 0.78rem;
+      font-weight: 700;
+      color: var(--warning);
+      margin-bottom: 6px;
+    }
+
+    .compare-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.85rem;
+      padding: 3px 0;
+    }
+
+    .compare-row .label { color: var(--gray-600); }
+    .compare-row .value { font-weight: 700; color: var(--gray-800); }
+    .compare-row .diff { color: var(--warning); font-weight: 700; }
+
+    /* === 수식 안내 === */
+    .formula-section {
+      margin-top: 24px;
+    }
+
+    .formula-section h2 {
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: var(--gray-800);
+      margin-bottom: 12px;
+    }
+
+    .formula-grid {
+      display: grid;
+      gap: 10px;
+    }
+
+    .formula-card {
+      background: #fff;
+      border: 1px solid var(--gray-200);
+      border-radius: var(--radius);
+      padding: 14px;
+    }
+
+    .formula-card h3 {
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: var(--gray-700);
+      margin-bottom: 6px;
+    }
+
+    .formula-code {
+      font-family: 'Courier New', monospace;
+      font-size: 0.82rem;
+      background: var(--gray-100);
+      border-radius: 4px;
+      padding: 8px 10px;
+      color: var(--gray-700);
+      line-height: 1.7;
+    }
+
+    /* === 푸터 === */
+    .site-footer {
+      background: #fff;
+      border-top: 1px solid var(--gray-200);
+      padding: 20px 16px;
+      text-align: center;
+    }
+
+    .site-footer p {
+      font-size: 0.8rem;
+      color: var(--gray-400);
+    }
+
+    /* === 반응형 === */
+    @media (max-width: 480px) {
+      .hero h1 { font-size: 1.4rem; }
+      .input-grid { grid-template-columns: 1fr; }
+      .mode-group { flex-direction: column; }
+      .mode-btn { text-align: center; }
+      .result-value { font-size: 1.35rem; }
+      .tab-btn { font-size: 0.8rem; padding: 9px 8px; }
+    }
+
+    @media (min-width: 600px) {
+      .formula-grid { grid-template-columns: 1fr 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- 사이트 헤더 -->
+  <header class="site-header">
+    <div class="site-header-inner">
+      <a href="/" class="site-logo">계산기 모음</a>
+      <span class="site-nav">무료 온라인 계산기</span>
+    </div>
+  </header>
+
+  <!-- AdSense 슬롯 1: 헤더 아래 -->
+  <!-- AdSense: publisher-id 입력 필요 -->
+  <div class="ad-slot" style="max-width:720px;margin:16px auto;padding:0 16px;">
+    <ins class="adsbygoogle"
+         style="display:block;width:100%;min-height:90px;"
+         data-ad-client="ca-pub-XXXXXXXXXXXXXXXX"
+         data-ad-slot="XXXXXXXXXX"
+         data-ad-format="horizontal"
+         data-full-width-responsive="true"></ins>
+    <span>(광고 영역 — AdSense publisher-id 입력 후 활성화)</span>
+  </div>
+
+  <main>
+    <!-- 히어로 -->
+    <section class="hero">
+      <h1>할인 계산기</h1>
+      <p>할인가·할인율·원가를 즉시 계산합니다. 중복 쿠폰 할인도 지원합니다.</p>
+    </section>
+
+    <!-- 탭 네비게이션 -->
+    <nav class="tab-nav" role="tablist" aria-label="계산 탭">
+      <button class="tab-btn active" role="tab" aria-selected="true"
+              aria-controls="tab-basic" id="btn-basic"
+              onclick="switchTab('basic')">기본 계산</button>
+      <button class="tab-btn" role="tab" aria-selected="false"
+              aria-controls="tab-double" id="btn-double"
+              onclick="switchTab('double')">중복 할인</button>
+    </nav>
+
+    <!-- 탭 1: 기본 계산 -->
+    <section id="tab-basic" class="tab-content active" role="tabpanel" aria-labelledby="btn-basic">
+
+      <div class="card">
+        <p class="card-title">계산 모드 선택</p>
+
+        <!-- 통화 선택 -->
+        <div class="currency-row">
+          <span class="currency-label">통화</span>
+          <select class="currency-select" id="currencyBasic" onchange="calcBasic()">
+            <option value="₩">₩ 원화</option>
+            <option value="$">$ 달러</option>
+            <option value="€">€ 유로</option>
+            <option value="¥">¥ 엔·위안</option>
+            <option value="£">£ 파운드</option>
+          </select>
+        </div>
+
+        <!-- 모드 버튼 -->
+        <div class="mode-group" role="group" aria-label="계산 모드">
+          <button class="mode-btn active" id="mode-discount" onclick="setMode('discount')">
+            할인가 계산
+          </button>
+          <button class="mode-btn" id="mode-rate" onclick="setMode('rate')">
+            할인율 역산
+          </button>
+          <button class="mode-btn" id="mode-original" onclick="setMode('original')">
+            원가 역산
+          </button>
+        </div>
+
+        <!-- 입력 필드 -->
+        <div class="input-grid" id="inputGrid">
+          <!-- 동적으로 렌더링됨 -->
+        </div>
+
+        <div class="error-msg" id="basicError" role="alert" aria-live="polite"></div>
+      </div>
+
+      <!-- 결과 -->
+      <div class="result-section" id="basicResultSection">
+        <div class="result-empty">위 값을 입력하면 즉시 계산됩니다.</div>
+      </div>
+
+      <!-- AdSense 슬롯 2: 기본 탭 결과 아래 -->
+      <!-- AdSense: publisher-id 입력 필요 -->
+      <div class="ad-slot">
+        <ins class="adsbygoogle"
+             style="display:block;width:100%;min-height:90px;"
+             data-ad-client="ca-pub-XXXXXXXXXXXXXXXX"
+             data-ad-slot="XXXXXXXXXX"
+             data-ad-format="rectangle"
+             data-full-width-responsive="true"></ins>
+        <span>(광고 영역 — AdSense publisher-id 입력 후 활성화)</span>
+      </div>
+
+    </section>
+
+    <!-- 탭 2: 중복 할인 -->
+    <section id="tab-double" class="tab-content" role="tabpanel" aria-labelledby="btn-double">
+
+      <div class="card">
+        <p class="card-title">중복(스택) 할인 계산</p>
+
+        <!-- 통화 선택 -->
+        <div class="currency-row">
+          <span class="currency-label">통화</span>
+          <select class="currency-select" id="currencyDouble" onchange="calcDouble()">
+            <option value="₩">₩ 원화</option>
+            <option value="$">$ 달러</option>
+            <option value="€">€ 유로</option>
+            <option value="¥">¥ 엔·위안</option>
+            <option value="£">£ 파운드</option>
+          </select>
+        </div>
+
+        <div class="input-grid">
+          <div class="input-group">
+            <label for="dblOriginal">원가</label>
+            <div class="input-wrapper">
+              <span class="input-prefix" id="dblCurrencyPrefix">₩</span>
+              <input type="number" id="dblOriginal" class="input-field has-prefix"
+                     placeholder="예: 50000" min="0" step="any"
+                     oninput="calcDouble()" inputmode="decimal">
+            </div>
+          </div>
+          <div class="input-group">
+            <label for="dblRate1">1차 할인율</label>
+            <div class="input-wrapper">
+              <input type="number" id="dblRate1" class="input-field has-suffix"
+                     placeholder="예: 20" min="0" max="100" step="any"
+                     oninput="calcDouble()" inputmode="decimal">
+              <span class="input-suffix">%</span>
+            </div>
+          </div>
+          <div class="input-group">
+            <label for="dblRate2">2차 할인율 (쿠폰 등)</label>
+            <div class="input-wrapper">
+              <input type="number" id="dblRate2" class="input-field has-suffix"
+                     placeholder="예: 10" min="0" max="100" step="any"
+                     oninput="calcDouble()" inputmode="decimal">
+              <span class="input-suffix">%</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="error-msg" id="doubleError" role="alert" aria-live="polite"></div>
+      </div>
+
+      <!-- 결과 -->
+      <div class="result-section" id="doubleResultSection">
+        <div class="result-empty">원가와 두 할인율을 입력하면 즉시 계산됩니다.</div>
+      </div>
+
+    </section>
+
+    <!-- 수식 안내 -->
+    <section class="formula-section" aria-label="계산 공식 안내">
+      <h2>계산 공식 안내</h2>
+      <div class="formula-grid">
+        <div class="formula-card">
+          <h3>할인가 계산</h3>
+          <div class="formula-code">
+            할인가 = 원가 × (1 - 할인율 / 100)<br>
+            절약 금액 = 원가 - 할인가
+          </div>
+        </div>
+        <div class="formula-card">
+          <h3>할인율 역산</h3>
+          <div class="formula-code">
+            할인율(%) = (원가 - 할인가)<br>
+            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;÷ 원가 × 100
+          </div>
+        </div>
+        <div class="formula-card">
+          <h3>원가 역산</h3>
+          <div class="formula-code">
+            원가 = 할인가<br>
+            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;÷ (1 - 할인율 / 100)
+          </div>
+        </div>
+        <div class="formula-card">
+          <h3>중복 할인</h3>
+          <div class="formula-code">
+            최종가 = 원가<br>
+            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;× (1 - D1/100)<br>
+            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;× (1 - D2/100)<br>
+            ※ D1+D2 단순 합산과 다름
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- AdSense 슬롯 3: 푸터 위 -->
+  <!-- AdSense: publisher-id 입력 필요 -->
+  <div class="ad-slot" style="max-width:720px;margin:0 auto 0;padding:0 16px;">
+    <ins class="adsbygoogle"
+         style="display:block;width:100%;min-height:90px;"
+         data-ad-client="ca-pub-XXXXXXXXXXXXXXXX"
+         data-ad-slot="XXXXXXXXXX"
+         data-ad-format="horizontal"
+         data-full-width-responsive="true"></ins>
+    <span>(광고 영역 — AdSense publisher-id 입력 후 활성화)</span>
+  </div>
+
+  <footer class="site-footer">
+    <p>할인 계산기 &mdash; 무료 온라인 계산기 모음 &copy; 2026</p>
+    <p style="margin-top:4px;">계산 결과는 참고용이며 실제 결제 금액과 다를 수 있습니다.</p>
+  </footer>
+
+  <script>
+    /* ===================================================
+       상태 관리
+    =================================================== */
+    let currentMode = 'discount'; // 'discount' | 'rate' | 'original'
+
+    /* ===================================================
+       유틸리티
+    =================================================== */
+
+    /**
+     * 숫자를 천 단위 콤마 + 소수점 2자리(필요 시)로 포맷
+     * @param {number} num
+     * @param {boolean} [isRate=false] 할인율이면 소수점 2자리
+     * @returns {string}
+     */
+    function formatNum(num, isRate = false) {
+      if (isNaN(num) || !isFinite(num)) return '-';
+      if (isRate) {
+        return num.toFixed(2).replace(/\.?0+$/, '') + '';
+      }
+      // 금액: 소수점 2자리까지 표시 (원화는 소수 없음), 천 단위 콤마
+      const rounded = Math.round(num * 100) / 100;
+      return rounded.toLocaleString('ko-KR', {
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 2
+      });
+    }
+
+    function getCurrencySymbol(selectId) {
+      return document.getElementById(selectId).value;
+    }
+
+    function formatMoney(num, symbol) {
+      return symbol + formatNum(num);
+    }
+
+    /**
+     * 입력값 파싱 및 검증
+     * @param {string} val 입력 문자열
+     * @param {'amount'|'rate'} type
+     * @returns {{ value: number|null, error: string }}
+     */
+    function parseInput(val, type) {
+      const trimmed = val.trim();
+      if (trimmed === '' || trimmed === null) return { value: null, error: '' };
+      const num = parseFloat(trimmed);
+      if (isNaN(num)) return { value: null, error: '숫자를 입력해 주세요.' };
+      if (type === 'amount') {
+        if (num <= 0) return { value: null, error: '0보다 큰 금액을 입력해 주세요.' };
+      }
+      if (type === 'rate') {
+        if (num < 0) return { value: null, error: '0 이상의 할인율을 입력해 주세요.' };
+        if (num > 100) return { value: null, error: '할인율은 100%를 초과할 수 없습니다.' };
+      }
+      return { value: num, error: '' };
+    }
+
+    /* ===================================================
+       탭 전환
+    =================================================== */
+    function switchTab(tab) {
+      document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+      document.querySelectorAll('.tab-btn').forEach(el => {
+        el.classList.remove('active');
+        el.setAttribute('aria-selected', 'false');
+      });
+      document.getElementById('tab-' + tab).classList.add('active');
+      const btn = document.getElementById('btn-' + tab);
+      btn.classList.add('active');
+      btn.setAttribute('aria-selected', 'true');
+    }
+
+    /* ===================================================
+       기본 계산 — 입력 폼 렌더
+    =================================================== */
+    function renderInputGrid() {
+      const symbol = getCurrencySymbol('currencyBasic');
+      const grid = document.getElementById('inputGrid');
+
+      let html = '';
+
+      if (currentMode === 'discount') {
+        html = `
+          <div class="input-group">
+            <label for="bOriginal">원가</label>
+            <div class="input-wrapper">
+              <span class="input-prefix" id="bCurrencyPrefix1">${symbol}</span>
+              <input type="number" id="bOriginal" class="input-field has-prefix"
+                     placeholder="예: 50000" min="0" step="any"
+                     oninput="calcBasic()" inputmode="decimal">
+            </div>
+          </div>
+          <div class="input-group">
+            <label for="bRate">할인율</label>
+            <div class="input-wrapper">
+              <input type="number" id="bRate" class="input-field has-suffix"
+                     placeholder="예: 30" min="0" max="100" step="any"
+                     oninput="calcBasic()" inputmode="decimal">
+              <span class="input-suffix">%</span>
+            </div>
+          </div>`;
+      } else if (currentMode === 'rate') {
+        html = `
+          <div class="input-group">
+            <label for="bOriginal">원가</label>
+            <div class="input-wrapper">
+              <span class="input-prefix" id="bCurrencyPrefix1">${symbol}</span>
+              <input type="number" id="bOriginal" class="input-field has-prefix"
+                     placeholder="예: 50000" min="0" step="any"
+                     oninput="calcBasic()" inputmode="decimal">
+            </div>
+          </div>
+          <div class="input-group">
+            <label for="bDiscounted">할인가</label>
+            <div class="input-wrapper">
+              <span class="input-prefix" id="bCurrencyPrefix2">${symbol}</span>
+              <input type="number" id="bDiscounted" class="input-field has-prefix"
+                     placeholder="예: 35000" min="0" step="any"
+                     oninput="calcBasic()" inputmode="decimal">
+            </div>
+          </div>`;
+      } else if (currentMode === 'original') {
+        html = `
+          <div class="input-group">
+            <label for="bDiscounted">할인가</label>
+            <div class="input-wrapper">
+              <span class="input-prefix" id="bCurrencyPrefix2">${symbol}</span>
+              <input type="number" id="bDiscounted" class="input-field has-prefix"
+                     placeholder="예: 35000" min="0" step="any"
+                     oninput="calcBasic()" inputmode="decimal">
+            </div>
+          </div>
+          <div class="input-group">
+            <label for="bRate">할인율</label>
+            <div class="input-wrapper">
+              <input type="number" id="bRate" class="input-field has-suffix"
+                     placeholder="예: 30" min="0" max="100" step="any"
+                     oninput="calcBasic()" inputmode="decimal">
+              <span class="input-suffix">%</span>
+            </div>
+          </div>`;
+      }
+
+      grid.innerHTML = html;
+    }
+
+    /* ===================================================
+       기본 계산 — 모드 전환
+    =================================================== */
+    function setMode(mode) {
+      currentMode = mode;
+      document.querySelectorAll('.mode-btn').forEach(btn => btn.classList.remove('active'));
+      document.getElementById('mode-' + mode).classList.add('active');
+      document.getElementById('basicError').textContent = '';
+      document.getElementById('basicResultSection').innerHTML =
+        '<div class="result-empty">위 값을 입력하면 즉시 계산됩니다.</div>';
+      renderInputGrid();
+    }
+
+    /* ===================================================
+       기본 계산 — 계산 실행
+    =================================================== */
+    function calcBasic() {
+      // 통화 기호 갱신
+      const symbol = getCurrencySymbol('currencyBasic');
+      ['bCurrencyPrefix1', 'bCurrencyPrefix2'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.textContent = symbol;
+      });
+
+      const errorEl = document.getElementById('basicError');
+      const resultSection = document.getElementById('basicResultSection');
+      errorEl.textContent = '';
+
+      // 입력 필드 오류 클래스 초기화
+      ['bOriginal', 'bRate', 'bDiscounted'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.classList.remove('error');
+      });
+
+      let errorMsg = '';
+      let resultHTML = '';
+
+      if (currentMode === 'discount') {
+        const origEl = document.getElementById('bOriginal');
+        const rateEl = document.getElementById('bRate');
+        const origParsed = parseInput(origEl ? origEl.value : '', 'amount');
+        const rateParsed = parseInput(rateEl ? rateEl.value : '', 'rate');
+
+        if (origParsed.error) { origEl.classList.add('error'); errorMsg = origParsed.error; }
+        else if (rateParsed.error) { rateEl.classList.add('error'); errorMsg = rateParsed.error; }
+
+        if (!errorMsg && origParsed.value !== null && rateParsed.value !== null) {
+          const orig = origParsed.value;
+          const rate = rateParsed.value;
+          const discountedPrice = orig * (1 - rate / 100);
+          const savings = orig - discountedPrice;
+          resultHTML = buildBasicResult(symbol, '할인가', discountedPrice, savings, rate, orig);
+        } else if (!errorMsg) {
+          resultHTML = '<div class="result-empty">원가와 할인율을 입력하면 즉시 계산됩니다.</div>';
+        }
+
+      } else if (currentMode === 'rate') {
+        const origEl = document.getElementById('bOriginal');
+        const discEl = document.getElementById('bDiscounted');
+        const origParsed = parseInput(origEl ? origEl.value : '', 'amount');
+        const discParsed = parseInput(discEl ? discEl.value : '', 'amount');
+
+        if (origParsed.error) { origEl.classList.add('error'); errorMsg = origParsed.error; }
+        else if (discParsed.error) { discEl.classList.add('error'); errorMsg = discParsed.error; }
+        else if (origParsed.value !== null && discParsed.value !== null &&
+                 discParsed.value > origParsed.value) {
+          discEl.classList.add('error');
+          errorMsg = '할인가는 원가보다 클 수 없습니다.';
+        }
+
+        if (!errorMsg && origParsed.value !== null && discParsed.value !== null) {
+          const orig = origParsed.value;
+          const disc = discParsed.value;
+          const rate = (orig - disc) / orig * 100;
+          const savings = orig - disc;
+          resultHTML = buildRateResult(symbol, rate, savings, orig, disc);
+        } else if (!errorMsg) {
+          resultHTML = '<div class="result-empty">원가와 할인가를 입력하면 즉시 계산됩니다.</div>';
+        }
+
+      } else if (currentMode === 'original') {
+        const discEl = document.getElementById('bDiscounted');
+        const rateEl = document.getElementById('bRate');
+        const discParsed = parseInput(discEl ? discEl.value : '', 'amount');
+        const rateParsed = parseInput(rateEl ? rateEl.value : '', 'rate');
+
+        if (discParsed.error) { discEl.classList.add('error'); errorMsg = discParsed.error; }
+        else if (rateParsed.error) { rateEl.classList.add('error'); errorMsg = rateParsed.error; }
+        else if (rateParsed.value !== null && rateParsed.value === 100) {
+          rateEl.classList.add('error');
+          errorMsg = '할인율 100%이면 원가를 역산할 수 없습니다.';
+        }
+
+        if (!errorMsg && discParsed.value !== null && rateParsed.value !== null) {
+          const disc = discParsed.value;
+          const rate = rateParsed.value;
+          const orig = disc / (1 - rate / 100);
+          const savings = orig - disc;
+          resultHTML = buildOriginalResult(symbol, orig, savings, disc, rate);
+        } else if (!errorMsg) {
+          resultHTML = '<div class="result-empty">할인가와 할인율을 입력하면 즉시 계산됩니다.</div>';
+        }
+      }
+
+      if (errorMsg) {
+        errorEl.textContent = errorMsg;
+        resultSection.innerHTML = '<div class="result-empty">입력값을 확인해 주세요.</div>';
+      } else {
+        resultSection.innerHTML = resultHTML;
+      }
+    }
+
+    /* ===================================================
+       기본 계산 — 결과 HTML 빌더
+    =================================================== */
+    function buildBasicResult(symbol, mainLabel, mainValue, savings, rate, orig) {
+      const savingsRatio = (savings / orig * 100).toFixed(1);
+      return `
+        <div class="result-box">
+          <div class="result-label">${mainLabel}</div>
+          <div class="result-main">
+            <span class="result-value">${formatMoney(mainValue, symbol)}</span>
+          </div>
+          <div class="result-sub">
+            <div class="result-sub-item">
+              <span class="result-sub-label">절약 금액</span>
+              <span class="result-sub-value">${formatMoney(savings, symbol)}</span>
+            </div>
+            <div class="result-sub-item">
+              <span class="result-sub-label">할인율</span>
+              <span class="result-sub-value">${formatNum(rate, true)}%</span>
+            </div>
+            <div class="result-sub-item">
+              <span class="result-sub-label">절약 비율</span>
+              <span class="result-sub-value">${savingsRatio}%</span>
+            </div>
+          </div>
+          ${buildCopyBtn('basic', symbol, mainValue, savings, rate)}
+        </div>`;
+    }
+
+    function buildRateResult(symbol, rate, savings, orig, disc) {
+      return `
+        <div class="result-box success">
+          <div class="result-label">할인율</div>
+          <div class="result-main">
+            <span class="result-value">${formatNum(rate, true)}%</span>
+          </div>
+          <div class="result-sub">
+            <div class="result-sub-item">
+              <span class="result-sub-label">절약 금액</span>
+              <span class="result-sub-value">${formatMoney(savings, symbol)}</span>
+            </div>
+            <div class="result-sub-item">
+              <span class="result-sub-label">원가</span>
+              <span class="result-sub-value">${formatMoney(orig, symbol)}</span>
+            </div>
+            <div class="result-sub-item">
+              <span class="result-sub-label">할인가</span>
+              <span class="result-sub-value">${formatMoney(disc, symbol)}</span>
+            </div>
+          </div>
+          ${buildCopyBtn('rate', symbol, disc, savings, rate)}
+        </div>`;
+    }
+
+    function buildOriginalResult(symbol, orig, savings, disc, rate) {
+      return `
+        <div class="result-box">
+          <div class="result-label">원가</div>
+          <div class="result-main">
+            <span class="result-value">${formatMoney(orig, symbol)}</span>
+          </div>
+          <div class="result-sub">
+            <div class="result-sub-item">
+              <span class="result-sub-label">절약 금액</span>
+              <span class="result-sub-value">${formatMoney(savings, symbol)}</span>
+            </div>
+            <div class="result-sub-item">
+              <span class="result-sub-label">할인율</span>
+              <span class="result-sub-value">${formatNum(rate, true)}%</span>
+            </div>
+            <div class="result-sub-item">
+              <span class="result-sub-label">할인가</span>
+              <span class="result-sub-value">${formatMoney(disc, symbol)}</span>
+            </div>
+          </div>
+          ${buildCopyBtn('original', symbol, orig, savings, rate)}
+        </div>`;
+    }
+
+    function buildCopyBtn(mode, symbol, mainValue, savings, rate) {
+      const dataStr = JSON.stringify({ mode, symbol, mainValue, savings, rate });
+      const encoded = btoa(encodeURIComponent(dataStr));
+      return `<button class="copy-btn" id="copyBtn_${mode}"
+                onclick="copyResult('${encoded}', 'copyBtn_${mode}')">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+                     stroke="currentColor" stroke-width="2.5" stroke-linecap="round"
+                     stroke-linejoin="round" aria-hidden="true">
+                  <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                  <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                </svg>
+                결과 복사
+              </button>`;
+    }
+
+    /* ===================================================
+       결과 복사
+    =================================================== */
+    function copyResult(encoded, btnId) {
+      try {
+        const dataStr = decodeURIComponent(atob(encoded));
+        const data = JSON.parse(dataStr);
+        let text = '';
+
+        if (data.mode === 'basic') {
+          text = `할인가: ${data.symbol}${formatNum(data.mainValue)}\n절약 금액: ${data.symbol}${formatNum(data.savings)}\n할인율: ${formatNum(data.rate, true)}%`;
+        } else if (data.mode === 'rate') {
+          text = `할인율: ${formatNum(data.rate, true)}%\n절약 금액: ${data.symbol}${formatNum(data.savings)}`;
+        } else if (data.mode === 'original') {
+          text = `원가: ${data.symbol}${formatNum(data.mainValue)}\n절약 금액: ${data.symbol}${formatNum(data.savings)}\n할인율: ${formatNum(data.rate, true)}%`;
+        } else if (data.mode === 'double') {
+          text = `최종 할인가: ${data.symbol}${formatNum(data.mainValue)}\n실제 할인율: ${formatNum(data.rate, true)}%\n절약 금액: ${data.symbol}${formatNum(data.savings)}`;
+        }
+
+        navigator.clipboard.writeText(text).then(() => {
+          const btn = document.getElementById(btnId);
+          if (btn) {
+            btn.classList.add('copied');
+            btn.innerHTML = btn.innerHTML.replace('결과 복사', '복사됨!');
+            setTimeout(() => {
+              btn.classList.remove('copied');
+              btn.innerHTML = btn.innerHTML.replace('복사됨!', '결과 복사');
+            }, 2000);
+          }
+        }).catch(() => {
+          // clipboard API 실패 시 fallback
+          const ta = document.createElement('textarea');
+          ta.value = text;
+          ta.style.position = 'fixed';
+          ta.style.opacity = '0';
+          document.body.appendChild(ta);
+          ta.select();
+          document.execCommand('copy');
+          document.body.removeChild(ta);
+        });
+      } catch (e) {
+        console.error('복사 실패:', e);
+      }
+    }
+
+    /* ===================================================
+       중복 할인 계산
+    =================================================== */
+    function calcDouble() {
+      const symbol = getCurrencySymbol('currencyDouble');
+
+      // 통화 기호 갱신
+      const prefixEl = document.getElementById('dblCurrencyPrefix');
+      if (prefixEl) prefixEl.textContent = symbol;
+
+      const errorEl = document.getElementById('doubleError');
+      const resultSection = document.getElementById('doubleResultSection');
+      errorEl.textContent = '';
+
+      ['dblOriginal', 'dblRate1', 'dblRate2'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.classList.remove('error');
+      });
+
+      const origEl = document.getElementById('dblOriginal');
+      const r1El = document.getElementById('dblRate1');
+      const r2El = document.getElementById('dblRate2');
+
+      const origParsed = parseInput(origEl.value, 'amount');
+      const r1Parsed = parseInput(r1El.value, 'rate');
+      const r2Parsed = parseInput(r2El.value, 'rate');
+
+      let errorMsg = '';
+      if (origParsed.error) { origEl.classList.add('error'); errorMsg = origParsed.error; }
+      else if (r1Parsed.error) { r1El.classList.add('error'); errorMsg = r1Parsed.error; }
+      else if (r2Parsed.error) { r2El.classList.add('error'); errorMsg = r2Parsed.error; }
+
+      if (errorMsg) {
+        errorEl.textContent = errorMsg;
+        resultSection.innerHTML = '<div class="result-empty">입력값을 확인해 주세요.</div>';
+        return;
+      }
+
+      if (origParsed.value === null || r1Parsed.value === null || r2Parsed.value === null) {
+        resultSection.innerHTML = '<div class="result-empty">원가와 두 할인율을 입력하면 즉시 계산됩니다.</div>';
+        return;
+      }
+
+      const orig = origParsed.value;
+      const d1 = r1Parsed.value;
+      const d2 = r2Parsed.value;
+
+      // 공식: 원가 × (1 - D1/100) × (1 - D2/100)
+      const after1st = orig * (1 - d1 / 100);
+      const finalPrice = after1st * (1 - d2 / 100);
+      const savings = orig - finalPrice;
+      // 실질 할인율: (1 - (1-D1/100)*(1-D2/100)) * 100
+      const realRate = (1 - (1 - d1 / 100) * (1 - d2 / 100)) * 100;
+      // 단순 합산 비교
+      const simpleSum = d1 + d2;
+      const diff = simpleSum - realRate;
+
+      const encoded = btoa(encodeURIComponent(JSON.stringify({
+        mode: 'double', symbol, mainValue: finalPrice, savings, rate: realRate
+      })));
+
+      const resultHTML = `
+        <div class="result-box">
+          <div class="result-label">최종 할인가</div>
+          <div class="result-main">
+            <span class="result-value">${formatMoney(finalPrice, symbol)}</span>
+          </div>
+          <div class="result-sub">
+            <div class="result-sub-item">
+              <span class="result-sub-label">실제 총 할인율</span>
+              <span class="result-sub-value">${formatNum(realRate, true)}%</span>
+            </div>
+            <div class="result-sub-item">
+              <span class="result-sub-label">절약 금액</span>
+              <span class="result-sub-value">${formatMoney(savings, symbol)}</span>
+            </div>
+            <div class="result-sub-item">
+              <span class="result-sub-label">1차 적용가</span>
+              <span class="result-sub-value">${formatMoney(after1st, symbol)}</span>
+            </div>
+          </div>
+          <button class="copy-btn" id="copyBtn_double"
+                  onclick="copyResult('${encoded}', 'copyBtn_double')">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+                 stroke="currentColor" stroke-width="2.5" stroke-linecap="round"
+                 stroke-linejoin="round" aria-hidden="true">
+              <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+              <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+            </svg>
+            결과 복사
+          </button>
+        </div>
+        ${diff > 0.001 ? `
+        <div class="compare-box">
+          <div class="compare-title">단순 합산과의 비교</div>
+          <div class="compare-row">
+            <span class="label">D1 + D2 단순 합산</span>
+            <span class="value">${formatNum(simpleSum, true)}%</span>
+          </div>
+          <div class="compare-row">
+            <span class="label">실제 중복 할인율</span>
+            <span class="value">${formatNum(realRate, true)}%</span>
+          </div>
+          <div class="compare-row">
+            <span class="label">차이 (과장된 할인)</span>
+            <span class="diff">-${formatNum(diff, true)}%</span>
+          </div>
+          <div style="font-size:0.76rem;color:var(--gray-500);margin-top:6px;">
+            ${d1}% + ${d2}%를 단순 합산하면 ${formatNum(simpleSum, true)}%처럼 보이지만,<br>
+            실제 할인은 <strong>${formatNum(realRate, true)}%</strong>입니다.
+          </div>
+        </div>` : ''}
+      `;
+
+      resultSection.innerHTML = resultHTML;
+    }
+
+    /* ===================================================
+       통화 변경 시 기존 입력에 심볼 반영
+    =================================================== */
+    document.addEventListener('DOMContentLoaded', function () {
+      // 기본 탭 초기 렌더
+      renderInputGrid();
+
+      // 통화 변경 감지 (기본 탭)
+      document.getElementById('currencyBasic').addEventListener('change', function () {
+        renderInputGrid();
+        calcBasic();
+      });
+    });
+  </script>
+</body>
+</html>
