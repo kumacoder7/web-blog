@@ -1,0 +1,1060 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BMI 계산기 - 체질량지수·비만도·표준체중 한번에</title>
+  <meta name="description" content="키와 체중을 입력하면 BMI(체질량지수), 비만도, 표준체중을 즉시 계산합니다. 대한비만학회 2022 기준과 WHO 기준을 동시에 확인하세요.">
+  <style>
+    /* ===== Reset & Base ===== */
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    :root {
+      --color-primary: #3b82f6;
+      --color-primary-dark: #2563eb;
+      --color-bg: #f8fafc;
+      --color-surface: #ffffff;
+      --color-border: #e2e8f0;
+      --color-text: #1e293b;
+      --color-text-muted: #64748b;
+      --color-underweight: #60a5fa;
+      --color-normal: #34d399;
+      --color-preobesity: #fbbf24;
+      --color-obesity1: #f97316;
+      --color-obesity2: #ef4444;
+      --color-obesity3: #991b1b;
+      --radius: 12px;
+      --shadow: 0 1px 3px rgba(0,0,0,0.08), 0 4px 12px rgba(0,0,0,0.06);
+    }
+
+    html {
+      font-size: 16px;
+      -webkit-text-size-adjust: 100%;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Apple SD Gothic Neo',
+                   'Noto Sans KR', sans-serif;
+      background: var(--color-bg);
+      color: var(--color-text);
+      line-height: 1.6;
+      min-height: 100vh;
+    }
+
+    /* ===== Layout ===== */
+    .site-header {
+      background: var(--color-surface);
+      border-bottom: 1px solid var(--color-border);
+      padding: 14px 16px;
+    }
+
+    .site-header__inner {
+      max-width: 720px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .site-header__logo {
+      font-size: 0.875rem;
+      font-weight: 600;
+      color: var(--color-primary);
+      text-decoration: none;
+    }
+
+    .site-header__sep {
+      color: var(--color-border);
+      font-size: 0.875rem;
+    }
+
+    .site-header__nav {
+      font-size: 0.875rem;
+      color: var(--color-text-muted);
+    }
+
+    main {
+      max-width: 720px;
+      margin: 0 auto;
+      padding: 0 16px 40px;
+    }
+
+    .page-hero {
+      text-align: center;
+      padding: 28px 0 20px;
+    }
+
+    .page-hero h1 {
+      font-size: 1.75rem;
+      font-weight: 700;
+      color: var(--color-text);
+      letter-spacing: -0.02em;
+    }
+
+    .page-hero__desc {
+      margin-top: 8px;
+      font-size: 0.9375rem;
+      color: var(--color-text-muted);
+    }
+
+    /* ===== AdSense Slot ===== */
+    .ad-slot {
+      background: #f1f5f9;
+      border: 1px dashed #cbd5e1;
+      border-radius: 8px;
+      min-height: 90px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #94a3b8;
+      font-size: 0.8125rem;
+      margin: 20px 0;
+      text-align: center;
+      padding: 8px;
+    }
+
+    /* ===== Card ===== */
+    .card {
+      background: var(--color-surface);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 24px 20px;
+      margin-bottom: 16px;
+    }
+
+    .card__title {
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--color-text);
+      margin-bottom: 16px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid var(--color-border);
+    }
+
+    /* ===== Gender Toggle ===== */
+    .gender-group {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+
+    .gender-btn {
+      flex: 1;
+      padding: 12px 0;
+      border: 2px solid var(--color-border);
+      border-radius: 10px;
+      background: var(--color-bg);
+      color: var(--color-text-muted);
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    }
+
+    .gender-btn:hover {
+      border-color: var(--color-primary);
+      color: var(--color-primary);
+    }
+
+    .gender-btn.active {
+      border-color: var(--color-primary);
+      background: #eff6ff;
+      color: var(--color-primary);
+    }
+
+    /* ===== Input Fields ===== */
+    .input-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+
+    .field-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .field-group label {
+      font-size: 0.875rem;
+      font-weight: 600;
+      color: var(--color-text-muted);
+    }
+
+    .input-wrap {
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+
+    .input-wrap input {
+      width: 100%;
+      padding: 12px 40px 12px 14px;
+      border: 2px solid var(--color-border);
+      border-radius: 10px;
+      font-size: 1.125rem;
+      font-weight: 600;
+      color: var(--color-text);
+      background: var(--color-bg);
+      outline: none;
+      transition: border-color 0.15s ease;
+      -moz-appearance: textfield;
+    }
+
+    .input-wrap input::-webkit-outer-spin-button,
+    .input-wrap input::-webkit-inner-spin-button {
+      -webkit-appearance: none;
+    }
+
+    .input-wrap input:focus {
+      border-color: var(--color-primary);
+      background: #fff;
+    }
+
+    .input-wrap input.error {
+      border-color: #ef4444;
+    }
+
+    .input-wrap__unit {
+      position: absolute;
+      right: 14px;
+      font-size: 0.8125rem;
+      font-weight: 600;
+      color: var(--color-text-muted);
+      pointer-events: none;
+    }
+
+    /* ===== Error Message ===== */
+    .error-msg {
+      font-size: 0.8125rem;
+      color: #ef4444;
+      margin-top: 4px;
+      min-height: 18px;
+    }
+
+    /* ===== Empty State ===== */
+    .result-empty {
+      text-align: center;
+      padding: 32px 0;
+      color: var(--color-text-muted);
+    }
+
+    .result-empty__icon {
+      font-size: 2.5rem;
+      margin-bottom: 8px;
+      opacity: 0.4;
+    }
+
+    .result-empty__text {
+      font-size: 0.9375rem;
+    }
+
+    /* ===== BMI Display ===== */
+    .bmi-display {
+      text-align: center;
+      padding: 24px 0 16px;
+    }
+
+    .bmi-display__label {
+      font-size: 0.875rem;
+      font-weight: 600;
+      color: var(--color-text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 4px;
+    }
+
+    .bmi-display__value {
+      font-size: 3.5rem;
+      font-weight: 800;
+      line-height: 1;
+      letter-spacing: -0.03em;
+      margin-bottom: 6px;
+    }
+
+    /* ===== BMI Gauge Bar ===== */
+    .gauge-wrap {
+      margin: 16px 0 20px;
+    }
+
+    .gauge-bar {
+      position: relative;
+      height: 20px;
+      border-radius: 10px;
+      overflow: visible;
+      display: flex;
+    }
+
+    .gauge-bar__seg {
+      height: 100%;
+      position: relative;
+    }
+
+    .gauge-bar__seg:first-child { border-radius: 10px 0 0 10px; }
+    .gauge-bar__seg:last-child  { border-radius: 0 10px 10px 0; }
+
+    /* [수정 1] 세그먼트 width를 명시적 퍼센트로 변경 — BMI 10~45 기준(35단위 전체)
+       저체중(10~18.5): 8.5/35 = 24.3%
+       정상(18.5~22.9): 4.4/35 = 12.6%  (22.9까지로 계산, 23-18.5=4.5 → 반올림 12.6%)
+       비만전단계(23~24.9): 2.0/35 = 5.7%
+       1단계(25~29.9): 5.0/35 = 14.3%
+       2단계(30~34.9): 5.0/35 = 14.3%
+       3단계(35~45): 10/35 = 28.6%
+    */
+    .gauge-bar__seg--uw { background: var(--color-underweight); width: 24.3%; }
+    .gauge-bar__seg--nm { background: var(--color-normal);      width: 12.6%; }
+    .gauge-bar__seg--po { background: var(--color-preobesity);  width: 5.7%;  }
+    .gauge-bar__seg--o1 { background: var(--color-obesity1);    width: 14.3%; }
+    .gauge-bar__seg--o2 { background: var(--color-obesity2);    width: 14.3%; }
+    .gauge-bar__seg--o3 { background: var(--color-obesity3);    width: 28.6%; }
+
+    .gauge-marker {
+      position: absolute;
+      top: -6px;
+      transform: translateX(-50%);
+      width: 4px;
+      height: 32px;
+      background: #1e293b;
+      border-radius: 2px;
+      pointer-events: none;
+      transition: left 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    .gauge-marker::before {
+      content: '';
+      position: absolute;
+      bottom: -6px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 0;
+      height: 0;
+      border-left: 5px solid transparent;
+      border-right: 5px solid transparent;
+      border-top: 6px solid #1e293b;
+    }
+
+    .gauge-labels {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 6px;
+    }
+
+    .gauge-labels span {
+      font-size: 0.6875rem;
+      color: var(--color-text-muted);
+      font-weight: 500;
+    }
+
+    /* ===== Verdict Cards ===== */
+    .verdict-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+
+    .verdict-card {
+      border-radius: 10px;
+      padding: 14px;
+      border: 2px solid transparent;
+    }
+
+    .verdict-card__org {
+      font-size: 0.75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      margin-bottom: 4px;
+      opacity: 0.75;
+    }
+
+    .verdict-card__label {
+      font-size: 1.0625rem;
+      font-weight: 700;
+    }
+
+    .verdict-card__sub {
+      font-size: 0.75rem;
+      margin-top: 2px;
+      opacity: 0.8;
+    }
+
+    /* Verdict color themes */
+    .verdict--uw   { background: #eff6ff; border-color: var(--color-underweight); color: #1d4ed8; }
+    .verdict--nm   { background: #f0fdf4; border-color: var(--color-normal);      color: #065f46; }
+    .verdict--po   { background: #fffbeb; border-color: var(--color-preobesity);  color: #92400e; }
+    .verdict--o1   { background: #fff7ed; border-color: var(--color-obesity1);    color: #9a3412; }
+    .verdict--o2   { background: #fef2f2; border-color: var(--color-obesity2);    color: #991b1b; }
+    .verdict--o3   { background: #fef2f2; border-color: var(--color-obesity3);    color: #7f1d1d; }
+
+    /* ===== Stats Grid ===== */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .stat-item {
+      background: var(--color-bg);
+      border-radius: 10px;
+      padding: 14px;
+      border: 1px solid var(--color-border);
+    }
+
+    .stat-item__label {
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--color-text-muted);
+      margin-bottom: 4px;
+    }
+
+    .stat-item__value {
+      font-size: 1.1875rem;
+      font-weight: 700;
+      color: var(--color-text);
+      line-height: 1.2;
+    }
+
+    .stat-item__sub {
+      font-size: 0.75rem;
+      color: var(--color-text-muted);
+      margin-top: 2px;
+    }
+
+    .stat-item--full {
+      grid-column: 1 / -1;
+    }
+
+    /* ===== Obesity Rate ===== */
+    .obesity-rate-bar-wrap {
+      margin-top: 8px;
+    }
+
+    .obesity-rate-track {
+      height: 8px;
+      background: #e2e8f0;
+      border-radius: 4px;
+      overflow: hidden;
+    }
+
+    .obesity-rate-fill {
+      height: 100%;
+      border-radius: 4px;
+      transition: width 0.4s ease, background 0.4s ease;
+      max-width: 100%;
+    }
+
+    /* ===== Reference Section ===== */
+    .reference-section {
+      margin-top: 24px;
+    }
+
+    .reference-section summary {
+      cursor: pointer;
+      font-size: 0.875rem;
+      font-weight: 600;
+      color: var(--color-text-muted);
+      padding: 12px 0;
+      border-top: 1px solid var(--color-border);
+      list-style: none;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      user-select: none;
+    }
+
+    .reference-section summary::-webkit-details-marker { display: none; }
+
+    .reference-section summary::before {
+      content: '▶';
+      font-size: 0.625rem;
+      transition: transform 0.2s;
+      display: inline-block;
+    }
+
+    .reference-section[open] summary::before {
+      transform: rotate(90deg);
+    }
+
+    /* [수정 2] reference-table 래퍼에 overflow-x: auto 추가 */
+    .reference-table-wrap {
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .reference-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.8125rem;
+      margin-top: 12px;
+    }
+
+    .reference-table th,
+    .reference-table td {
+      padding: 8px 10px;
+      text-align: left;
+      border-bottom: 1px solid var(--color-border);
+    }
+
+    .reference-table th {
+      font-weight: 700;
+      color: var(--color-text-muted);
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      background: var(--color-bg);
+    }
+
+    .reference-table tr:last-child td { border-bottom: none; }
+
+    /* ===== Footer ===== */
+    .site-footer {
+      border-top: 1px solid var(--color-border);
+      padding: 20px 16px;
+      text-align: center;
+    }
+
+    .site-footer__inner {
+      max-width: 720px;
+      margin: 0 auto;
+    }
+
+    .site-footer p {
+      font-size: 0.8125rem;
+      color: var(--color-text-muted);
+      line-height: 1.7;
+    }
+
+    /* ===== Utility ===== */
+    .hidden { display: none !important; }
+
+    /* ===== Responsive ===== */
+    @media (max-width: 480px) {
+      .page-hero h1 { font-size: 1.5rem; }
+
+      .card { padding: 18px 16px; }
+
+      .bmi-display__value { font-size: 3rem; }
+
+      .verdict-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .stats-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .stat-item--full {
+        grid-column: unset;
+      }
+
+      .gauge-labels span {
+        font-size: 0.625rem;
+      }
+    }
+
+    @media (min-width: 600px) {
+      .page-hero h1 { font-size: 2rem; }
+      .card { padding: 28px 24px; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Site Header -->
+  <header class="site-header">
+    <div class="site-header__inner">
+      <a href="/" class="site-header__logo">도구 블로그</a>
+      <span class="site-header__sep">/</span>
+      <span class="site-header__nav">BMI 계산기</span>
+    </div>
+  </header>
+
+  <main>
+    <div class="page-hero">
+      <h1>BMI 계산기</h1>
+      <p class="page-hero__desc">체질량지수·비만도·표준체중을 한번에 계산</p>
+    </div>
+
+    <!-- AdSense 슬롯 1: 헤더 아래 -->
+    <!-- AdSense: publisher-id 입력 필요 -->
+    <div class="ad-slot" aria-hidden="true">
+      광고 영역 (AdSense 상단 배너 — publisher-id 입력 후 활성화)
+    </div>
+
+    <!-- Input Card -->
+    <section class="card" aria-label="BMI 입력">
+      <h2 class="card__title">키와 체중 입력</h2>
+
+      <!-- 성별 선택 -->
+      <div class="gender-group" role="group" aria-label="성별 선택">
+        <button class="gender-btn active" id="btn-male"   type="button" data-gender="male"   aria-pressed="true">
+          남성
+        </button>
+        <button class="gender-btn"        id="btn-female" type="button" data-gender="female" aria-pressed="false">
+          여성
+        </button>
+      </div>
+
+      <!-- 키 / 체중 입력 -->
+      <div class="input-row">
+        <div class="field-group">
+          <label for="input-height">키</label>
+          <div class="input-wrap">
+            <input
+              type="number"
+              id="input-height"
+              inputmode="decimal"
+              placeholder="170"
+              min="50"
+              max="300"
+              autocomplete="off"
+              aria-describedby="error-height"
+            >
+            <span class="input-wrap__unit">cm</span>
+          </div>
+          <span class="error-msg" id="error-height" role="alert"></span>
+        </div>
+        <div class="field-group">
+          <label for="input-weight">체중</label>
+          <div class="input-wrap">
+            <input
+              type="number"
+              id="input-weight"
+              inputmode="decimal"
+              placeholder="65"
+              min="1"
+              max="500"
+              autocomplete="off"
+              aria-describedby="error-weight"
+            >
+            <span class="input-wrap__unit">kg</span>
+          </div>
+          <span class="error-msg" id="error-weight" role="alert"></span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Result Card -->
+    <section class="card" id="result-card" aria-label="BMI 결과" aria-live="polite">
+
+      <!-- Empty state -->
+      <div id="result-empty" class="result-empty">
+        <div class="result-empty__icon">📏</div>
+        <p class="result-empty__text">키와 체중을 입력하면 결과가 표시됩니다.</p>
+      </div>
+
+      <!-- Result content (hidden until calculated) -->
+      <div id="result-content" class="hidden">
+
+        <!-- BMI 수치 -->
+        <div class="bmi-display">
+          <div class="bmi-display__label">BMI (체질량지수)</div>
+          <div class="bmi-display__value" id="bmi-value">—</div>
+        </div>
+
+        <!-- 게이지 바 -->
+        <div class="gauge-wrap" aria-label="BMI 게이지">
+          <div class="gauge-bar" id="gauge-bar" role="img" aria-label="BMI 범위 시각화">
+            <div class="gauge-bar__seg gauge-bar__seg--uw" title="저체중 (18.5 미만)"></div>
+            <div class="gauge-bar__seg gauge-bar__seg--nm" title="정상 (18.5~22.9)"></div>
+            <div class="gauge-bar__seg gauge-bar__seg--po" title="비만 전단계 (23~24.9)"></div>
+            <div class="gauge-bar__seg gauge-bar__seg--o1" title="1단계 비만 (25~29.9)"></div>
+            <div class="gauge-bar__seg gauge-bar__seg--o2" title="2단계 비만 (30~34.9)"></div>
+            <div class="gauge-bar__seg gauge-bar__seg--o3" title="3단계 비만 (35 이상)"></div>
+            <div class="gauge-marker" id="gauge-marker"></div>
+          </div>
+          <div class="gauge-labels">
+            <span>저체중</span>
+            <span>정상</span>
+            <span>과체중</span>
+            <span>비만</span>
+            <span>고도비만</span>
+          </div>
+        </div>
+
+        <!-- 판정 카드: 대한비만학회 + WHO -->
+        <div class="verdict-grid">
+          <div class="verdict-card" id="verdict-korea">
+            <div class="verdict-card__org">대한비만학회 2022</div>
+            <div class="verdict-card__label" id="verdict-korea-label">—</div>
+            <div class="verdict-card__sub">한국·아시아 기준</div>
+          </div>
+          <div class="verdict-card" id="verdict-who">
+            <div class="verdict-card__org">WHO 기준</div>
+            <div class="verdict-card__label" id="verdict-who-label">—</div>
+            <div class="verdict-card__sub">국제 기준</div>
+          </div>
+        </div>
+
+        <!-- 표준체중 & 비만도 -->
+        <div class="stats-grid">
+          <div class="stat-item">
+            <div class="stat-item__label">표준체중 (브로카 변법)</div>
+            <div class="stat-item__value" id="std-broca">— kg</div>
+            <div class="stat-item__sub" id="std-broca-formula">—</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-item__label">표준체중 (BMI 22 기준)</div>
+            <div class="stat-item__value" id="std-bmi22">— kg</div>
+            <div class="stat-item__sub">22 × 키(m)²</div>
+          </div>
+          <div class="stat-item stat-item--full">
+            <div class="stat-item__label">비만도 (브로카 변법 기준)</div>
+            <div class="stat-item__value" id="obesity-rate-value">— %</div>
+            <div class="stat-item__sub" id="obesity-rate-label">—</div>
+            <div class="obesity-rate-bar-wrap">
+              <div class="obesity-rate-track">
+                <div class="obesity-rate-fill" id="obesity-rate-fill" style="width:0%"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- AdSense 슬롯 2: 결과 아래 -->
+    <!-- AdSense: publisher-id 입력 필요 -->
+    <div class="ad-slot" aria-hidden="true">
+      광고 영역 (AdSense 결과 하단 — publisher-id 입력 후 활성화)
+    </div>
+
+    <!-- BMI 기준표 (펼침) -->
+    <section class="card" aria-label="BMI 판정 기준">
+      <h2 class="card__title">BMI 판정 기준표</h2>
+      <details class="reference-section">
+        <summary>대한비만학회 2022 기준 (한국·아시아)</summary>
+        <div class="reference-table-wrap">
+          <table class="reference-table">
+            <thead>
+              <tr>
+                <th>BMI 범위</th>
+                <th>판정</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr><td>18.5 미만</td><td>저체중</td></tr>
+              <tr><td>18.5 ~ 22.9</td><td>정상</td></tr>
+              <tr><td>23.0 ~ 24.9</td><td>비만 전단계 (과체중)</td></tr>
+              <tr><td>25.0 ~ 29.9</td><td>1단계 비만</td></tr>
+              <tr><td>30.0 ~ 34.9</td><td>2단계 비만</td></tr>
+              <tr><td>35.0 이상</td><td>3단계 비만 (고도비만)</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </details>
+      <details class="reference-section">
+        <summary>WHO 기준 (국제 표준)</summary>
+        <div class="reference-table-wrap">
+          <table class="reference-table">
+            <thead>
+              <tr>
+                <th>BMI 범위</th>
+                <th>판정</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr><td>18.5 미만</td><td>저체중 (Underweight)</td></tr>
+              <tr><td>18.5 ~ 24.9</td><td>정상 (Normal weight)</td></tr>
+              <tr><td>25.0 ~ 29.9</td><td>과체중 (Overweight)</td></tr>
+              <tr><td>30.0 이상</td><td>비만 (Obese)</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </details>
+      <details class="reference-section">
+        <summary>표준체중 공식 안내</summary>
+        <div style="padding: 12px 0; font-size: 0.875rem; color: var(--color-text-muted); line-height: 1.75;">
+          <p><strong>브로카 변법</strong> — 남성: (키(cm) − 100) × 0.9 / 여성: (키(cm) − 100) × 0.85</p>
+          <p style="margin-top:6px;"><strong>BMI 22 공식</strong> — 22 × 키(m)² (대한비만학회 권고 표준체중)</p>
+          <p style="margin-top:6px;"><strong>비만도(%)</strong> — (현재 체중 ÷ 브로카 변법 표준체중) × 100<br>
+          90% 미만: 저체중 / 90~110%: 정상 / 110~120%: 과체중 / 120% 이상: 비만</p>
+        </div>
+      </details>
+    </section>
+
+  </main>
+
+  <!-- AdSense 슬롯 3: 푸터 위 -->
+  <!-- AdSense: publisher-id 입력 필요 -->
+  <div class="ad-slot" style="max-width:720px;margin:0 auto 20px;padding: 0 16px;" aria-hidden="true">
+    광고 영역 (AdSense 하단 — publisher-id 입력 후 활성화)
+  </div>
+
+  <footer class="site-footer">
+    <div class="site-footer__inner">
+      <p>
+        본 계산기는 <strong>대한비만학회 2022 기준</strong>과 <strong>WHO 기준</strong>을 바탕으로 합니다.<br>
+        의학적 진단이 아니며, 정확한 건강 상태는 의료 전문가와 상담하세요.
+      </p>
+    </div>
+  </footer>
+
+  <script>
+    'use strict';
+
+    /* ===== 상수 ===== */
+    const HEIGHT_MIN = 50;
+    const HEIGHT_MAX = 300;
+    const WEIGHT_MIN = 1;
+    const WEIGHT_MAX = 500;
+
+    /* 게이지 바 BMI 범위: 표시 구간 10 ~ 45 (실제 범위 35단위) */
+    const GAUGE_MIN = 10;
+    const GAUGE_MAX = 45;
+    const GAUGE_RANGE = GAUGE_MAX - GAUGE_MIN; // 35
+
+    /* 대한비만학회 2022 판정 */
+    const KOREA_VERDICTS = [
+      { max: 18.5, label: '저체중',           theme: 'uw', subNote: 'BMI 18.5 미만' },
+      { max: 23.0, label: '정상',             theme: 'nm', subNote: 'BMI 18.5~22.9' },
+      { max: 25.0, label: '비만 전단계',       theme: 'po', subNote: 'BMI 23.0~24.9' },
+      { max: 30.0, label: '1단계 비만',        theme: 'o1', subNote: 'BMI 25.0~29.9' },
+      { max: 35.0, label: '2단계 비만',        theme: 'o2', subNote: 'BMI 30.0~34.9' },
+      { max: Infinity, label: '3단계 비만',    theme: 'o3', subNote: 'BMI 35.0 이상' },
+    ];
+
+    /* WHO 판정 */
+    const WHO_VERDICTS = [
+      { max: 18.5,    label: '저체중',    theme: 'uw', subNote: 'BMI 18.5 미만' },
+      { max: 25.0,    label: '정상',      theme: 'nm', subNote: 'BMI 18.5~24.9' },
+      { max: 30.0,    label: '과체중',    theme: 'po', subNote: 'BMI 25.0~29.9' },
+      { max: Infinity, label: '비만',     theme: 'o2', subNote: 'BMI 30.0 이상' },
+    ];
+
+    /* 비만도 판정 */
+    const OBESITY_RATE_LABELS = [
+      { max: 90,       label: '저체중',  color: '#60a5fa' },
+      { max: 110,      label: '정상',    color: '#34d399' },
+      { max: 120,      label: '과체중',  color: '#fbbf24' },
+      { max: Infinity, label: '비만',    color: '#ef4444' },
+    ];
+
+    /* ===== 상태 ===== */
+    let currentGender = 'male';
+
+    /* ===== DOM 참조 ===== */
+    const elBtnMale    = document.getElementById('btn-male');
+    const elBtnFemale  = document.getElementById('btn-female');
+    const elHeight     = document.getElementById('input-height');
+    const elWeight     = document.getElementById('input-weight');
+    const elErrHeight  = document.getElementById('error-height');
+    const elErrWeight  = document.getElementById('error-weight');
+
+    const elResultEmpty   = document.getElementById('result-empty');
+    const elResultContent = document.getElementById('result-content');
+
+    const elBmiValue        = document.getElementById('bmi-value');
+    const elGaugeMarker     = document.getElementById('gauge-marker');
+    const elGaugeBar        = document.getElementById('gauge-bar');
+
+    const elVerdictKorea      = document.getElementById('verdict-korea');
+    const elVerdictKoreaLabel = document.getElementById('verdict-korea-label');
+    const elVerdictWho        = document.getElementById('verdict-who');
+    const elVerdictWhoLabel   = document.getElementById('verdict-who-label');
+
+    const elStdBroca        = document.getElementById('std-broca');
+    const elStdBrocaFormula = document.getElementById('std-broca-formula');
+    const elStdBmi22        = document.getElementById('std-bmi22');
+    const elObesityValue    = document.getElementById('obesity-rate-value');
+    const elObesityLabel    = document.getElementById('obesity-rate-label');
+    const elObesityFill     = document.getElementById('obesity-rate-fill');
+
+    /* ===== 유틸 함수 ===== */
+    function round1(n) {
+      return Math.round(n * 10) / 10;
+    }
+
+    function clamp(val, min, max) {
+      return Math.min(Math.max(val, min), max);
+    }
+
+    function getVerdict(bmi, table) {
+      return table.find(v => bmi < v.max) || table[table.length - 1];
+    }
+
+    function getObesityRateInfo(rate) {
+      return OBESITY_RATE_LABELS.find(v => rate < v.max) || OBESITY_RATE_LABELS[OBESITY_RATE_LABELS.length - 1];
+    }
+
+    /* 게이지 마커 위치(%): BMI 값 → 전체 gauge-bar 너비 대비 %
+       세그먼트 width 합계 = 24.3+12.6+5.7+14.3+14.3+28.6 = 99.8% ≈ 100%
+       마커는 (bmi - 10) / 35 * 100% 로 계산 (세그먼트 퍼센트 기준과 동일) */
+    function bmiToGaugePct(bmi) {
+      const pct = ((clamp(bmi, GAUGE_MIN, GAUGE_MAX) - GAUGE_MIN) / GAUGE_RANGE) * 100;
+      return pct;
+    }
+
+    /* 판정 카드 테마 클래스 적용 */
+    const THEME_CLASSES = ['verdict--uw', 'verdict--nm', 'verdict--po', 'verdict--o1', 'verdict--o2', 'verdict--o3'];
+
+    function applyVerdictTheme(el, theme) {
+      THEME_CLASSES.forEach(c => el.classList.remove(c));
+      el.classList.add('verdict--' + theme);
+    }
+
+    /* ===== 입력 유효성 검사 ===== */
+    function validateHeight(val) {
+      if (val === '' || val === null) return '키를 입력해 주세요.';
+      const n = parseFloat(val);
+      if (isNaN(n) || n <= 0) return '0보다 큰 값을 입력해 주세요.';
+      if (n < HEIGHT_MIN) return `키는 ${HEIGHT_MIN}cm 이상 입력해 주세요.`;
+      if (n > HEIGHT_MAX) return `키는 ${HEIGHT_MAX}cm 이하로 입력해 주세요.`;
+      return '';
+    }
+
+    function validateWeight(val) {
+      if (val === '' || val === null) return '체중을 입력해 주세요.';
+      const n = parseFloat(val);
+      if (isNaN(n) || n <= 0) return '0보다 큰 값을 입력해 주세요.';
+      if (n > WEIGHT_MAX) return `체중은 ${WEIGHT_MAX}kg 이하로 입력해 주세요.`;
+      return '';
+    }
+
+    /* ===== 계산 함수 ===== */
+    function calcBmi(heightCm, weightKg) {
+      const hm = heightCm / 100;
+      return weightKg / (hm * hm);
+    }
+
+    function calcStdBroca(heightCm, gender) {
+      const base = (heightCm - 100);
+      const coeff = gender === 'male' ? 0.9 : 0.85;
+      return base * coeff;
+    }
+
+    function calcStdBmi22(heightCm) {
+      const hm = heightCm / 100;
+      return 22 * hm * hm;
+    }
+
+    function calcObesityRate(weightKg, stdBroca) {
+      return (weightKg / stdBroca) * 100;
+    }
+
+    /* ===== UI 업데이트 ===== */
+    function showResult(heightCm, weightKg) {
+      const bmi       = calcBmi(heightCm, weightKg);
+      const bmi1      = round1(bmi);
+      const stdBroca  = round1(calcStdBroca(heightCm, currentGender));
+      const stdBmi22  = round1(calcStdBmi22(heightCm));
+      const oRate     = round1(calcObesityRate(weightKg, calcStdBroca(heightCm, currentGender)));
+
+      const koreaVerdict = getVerdict(bmi, KOREA_VERDICTS);
+      const whoVerdict   = getVerdict(bmi, WHO_VERDICTS);
+      const oRateInfo    = getObesityRateInfo(oRate);
+
+      /* BMI 수치 */
+      elBmiValue.textContent = bmi1.toFixed(1);
+
+      /* BMI 수치 색상 — 대한비만학회 테마 기준 */
+      const bmiColorMap = { uw: '#2563eb', nm: '#059669', po: '#d97706', o1: '#ea580c', o2: '#dc2626', o3: '#7f1d1d' };
+      elBmiValue.style.color = bmiColorMap[koreaVerdict.theme] || '#1e293b';
+
+      /* 게이지 마커: (bmi - 10) / 35 * 100% — 세그먼트 퍼센트 width 기준과 동일 */
+      const gaugePct = bmiToGaugePct(bmi);
+      elGaugeMarker.style.left = gaugePct + '%';
+
+      /* 판정 카드 */
+      applyVerdictTheme(elVerdictKorea, koreaVerdict.theme);
+      elVerdictKoreaLabel.textContent = koreaVerdict.label;
+      elVerdictKorea.querySelector('.verdict-card__sub').textContent = koreaVerdict.subNote;
+
+      applyVerdictTheme(elVerdictWho, whoVerdict.theme);
+      elVerdictWhoLabel.textContent = whoVerdict.label;
+      elVerdictWho.querySelector('.verdict-card__sub').textContent = whoVerdict.subNote;
+
+      /* 표준체중 */
+      elStdBroca.textContent = stdBroca.toFixed(1) + ' kg';
+      elStdBrocaFormula.textContent =
+        currentGender === 'male'
+          ? `(${heightCm}cm − 100) × 0.9`
+          : `(${heightCm}cm − 100) × 0.85`;
+
+      elStdBmi22.textContent = stdBmi22.toFixed(1) + ' kg';
+
+      /* 비만도 */
+      elObesityValue.textContent = oRate.toFixed(1) + ' %';
+      elObesityLabel.textContent = oRateInfo.label;
+
+      /* 비만도 바: 100% = 정상(110%) 기준으로 시각화, 최대 150% 표시 */
+      const fillPct = clamp(((oRate - 0) / 150) * 100, 0, 100);
+      elObesityFill.style.width   = fillPct + '%';
+      elObesityFill.style.background = oRateInfo.color;
+
+      /* 영역 표시 */
+      elResultEmpty.classList.add('hidden');
+      elResultContent.classList.remove('hidden');
+    }
+
+    function clearResult() {
+      elResultContent.classList.add('hidden');
+      elResultEmpty.classList.remove('hidden');
+    }
+
+    /* ===== 메인 계산 진입점 ===== */
+    function calculate() {
+      const hVal = elHeight.value.trim();
+      const wVal = elWeight.value.trim();
+
+      const hErr = validateHeight(hVal);
+      const wErr = validateWeight(wVal);
+
+      /* 에러 표시 */
+      elErrHeight.textContent = hErr;
+      elHeight.classList.toggle('error', !!hErr);
+      elErrWeight.textContent = wErr;
+      elWeight.classList.toggle('error', !!wErr);
+
+      /* 둘 다 비어 있으면 결과 초기화 */
+      if (hVal === '' && wVal === '') {
+        clearResult();
+        return;
+      }
+
+      /* 유효성 오류 있으면 결과 숨김 */
+      if (hErr || wErr) {
+        clearResult();
+        return;
+      }
+
+      showResult(parseFloat(hVal), parseFloat(wVal));
+    }
+
+    /* ===== 이벤트 ===== */
+    elBtnMale.addEventListener('click', () => {
+      currentGender = 'male';
+      elBtnMale.classList.add('active');
+      elBtnMale.setAttribute('aria-pressed', 'true');
+      elBtnFemale.classList.remove('active');
+      elBtnFemale.setAttribute('aria-pressed', 'false');
+      calculate();
+    });
+
+    elBtnFemale.addEventListener('click', () => {
+      currentGender = 'female';
+      elBtnFemale.classList.add('active');
+      elBtnFemale.setAttribute('aria-pressed', 'true');
+      elBtnMale.classList.remove('active');
+      elBtnMale.setAttribute('aria-pressed', 'false');
+      calculate();
+    });
+
+    elHeight.addEventListener('input', calculate);
+    elWeight.addEventListener('input', calculate);
+
+    /* 초기화 */
+    calculate();
+  </script>
+
+</body>
+</html>
