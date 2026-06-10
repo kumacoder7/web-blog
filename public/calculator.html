@@ -1,0 +1,952 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>계산기 — 무료 온라인 계산기, 공학 계산기</title>
+  <meta name="description" content="무료 온라인 계산기. 일반 계산기와 공학 계산기를 하나의 페이지에서 바로 사용하세요. sin, cos, log, 루트 등 공학 함수 지원.">
+  <meta property="og:title" content="계산기 — 무료 온라인 계산기, 공학 계산기">
+  <meta property="og:description" content="무료 온라인 계산기. 일반 계산기와 공학 계산기를 하나의 페이지에서 바로 사용하세요.">
+  <meta property="og:type" content="website">
+  <link rel="canonical" href="https://example.com/calculator.html">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: #F1F5F9;
+      color: #1E293B;
+      line-height: 1.6;
+    }
+
+    /* ── 헤더 ── */
+    header {
+      background: #2563EB;
+      color: #fff;
+      padding: 24px 16px;
+      text-align: center;
+    }
+    header h1 { font-size: 1.75rem; font-weight: 700; }
+    header p  { font-size: 0.95rem; margin-top: 6px; opacity: 0.88; }
+
+    /* ── 광고 슬롯 ── */
+    .ad-slot {
+      background: #E2E8F0;
+      border: 1px dashed #94A3B8;
+      border-radius: 8px;
+      text-align: center;
+      padding: 20px;
+      color: #64748B;
+      font-size: 0.82rem;
+      margin: 16px auto;
+      max-width: 728px;
+    }
+
+    /* ── 메인 레이아웃 ── */
+    main {
+      max-width: 720px;
+      margin: 0 auto;
+      padding: 16px;
+    }
+
+    /* ── 탭 버튼 ── */
+    .tab-bar {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+    .tab-btn {
+      flex: 1;
+      padding: 12px 0;
+      border: none;
+      border-radius: 10px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.15s, color 0.15s;
+      background: #CBD5E1;
+      color: #475569;
+    }
+    .tab-btn.active {
+      background: #2563EB;
+      color: #fff;
+    }
+    .tab-btn:hover:not(.active) {
+      background: #94A3B8;
+      color: #1E293B;
+    }
+
+    /* ── 계산기 카드 ── */
+    .calc-card {
+      background: #fff;
+      border-radius: 12px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+      padding: 20px;
+      display: none;
+    }
+    .calc-card.active { display: block; }
+
+    /* ── 디스플레이 ── */
+    .display {
+      background: #0F172A;
+      border-radius: 10px;
+      padding: 14px 18px 12px;
+      margin-bottom: 14px;
+      min-height: 80px;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+      align-items: flex-end;
+    }
+    .display-history {
+      font-size: 0.88rem;
+      color: #64748B;
+      min-height: 20px;
+      word-break: break-all;
+      text-align: right;
+    }
+    .display-main {
+      font-size: 2rem;
+      font-weight: 700;
+      color: #F8FAFC;
+      word-break: break-all;
+      text-align: right;
+      margin-top: 4px;
+      line-height: 1.2;
+    }
+
+    /* ── 버튼 그리드 ── */
+    .btn-grid {
+      display: grid;
+      gap: 8px;
+    }
+
+    /* 일반 계산기: 4열 */
+    .btn-grid-std {
+      grid-template-columns: repeat(4, 1fr);
+    }
+
+    /* 공학 계산기: 5열 */
+    .btn-grid-sci {
+      grid-template-columns: repeat(5, 1fr);
+    }
+
+    /* 공통 버튼 */
+    .btn {
+      border: none;
+      border-radius: 8px;
+      font-size: 1rem;
+      font-weight: 500;
+      cursor: pointer;
+      min-height: 52px;
+      padding: 0 4px;
+      transition: background 0.12s, transform 0.08s;
+      user-select: none;
+      -webkit-user-select: none;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .btn:active { transform: scale(0.94); }
+
+    /* 숫자 버튼 */
+    .btn-num {
+      background: #F8FAFC;
+      color: #1E293B;
+    }
+    .btn-num:hover { background: #E2E8F0; }
+
+    /* 0 버튼 — 2칸 너비 */
+    .btn-zero {
+      grid-column: span 2;
+    }
+
+    /* 연산자 버튼 (÷, ×, −, +) */
+    .btn-op {
+      background: #EFF6FF;
+      color: #2563EB;
+      font-weight: 700;
+    }
+    .btn-op:hover { background: #DBEAFE; }
+
+    /* AC, = 버튼 */
+    .btn-ac {
+      background: #FEE2E2;
+      color: #991B1B;
+      font-weight: 700;
+    }
+    .btn-ac:hover { background: #FECACA; }
+
+    .btn-eq {
+      background: #2563EB;
+      color: #fff;
+      font-weight: 700;
+    }
+    .btn-eq:hover { background: #1D4ED8; }
+
+    /* 함수 버튼 (공학) */
+    .btn-fn {
+      background: #F0FDF4;
+      color: #166534;
+      font-size: 0.82rem;
+    }
+    .btn-fn:hover { background: #DCFCE7; }
+
+    /* 메모리 버튼 */
+    .btn-mem {
+      background: #FFF7ED;
+      color: #9A3412;
+      font-size: 0.88rem;
+    }
+    .btn-mem:hover { background: #FFEDD5; }
+
+    /* Deg/Rad 토글 */
+    .btn-degrad {
+      background: #F5F3FF;
+      color: #5B21B6;
+      font-size: 0.82rem;
+      font-weight: 700;
+    }
+    .btn-degrad:hover { background: #EDE9FE; }
+
+    /* 괄호 */
+    .btn-paren {
+      background: #F0F9FF;
+      color: #0369A1;
+    }
+    .btn-paren:hover { background: #E0F2FE; }
+
+    /* 빈 칸 자리 채우기 */
+    .btn-empty {
+      background: transparent;
+      cursor: default;
+      pointer-events: none;
+    }
+
+    /* ── 메모리 표시 배지 ── */
+    .mem-badge {
+      font-size: 0.75rem;
+      color: #9A3412;
+      background: #FFEDD5;
+      border-radius: 4px;
+      padding: 2px 6px;
+      margin-bottom: 8px;
+      display: inline-block;
+      visibility: hidden;
+    }
+    .mem-badge.visible { visibility: visible; }
+
+    /* ── 푸터 ── */
+    footer {
+      text-align: center;
+      padding: 24px 16px;
+      font-size: 0.82rem;
+      color: #94A3B8;
+    }
+
+    /* ── 모바일 반응형 ── */
+    @media (max-width: 480px) {
+      header h1 { font-size: 1.4rem; }
+      .display-main { font-size: 1.6rem; }
+      .btn { min-height: 44px; font-size: 0.82rem; }
+      .btn-fn { font-size: 0.68rem; }
+      .btn-mem { font-size: 0.72rem; }
+      .btn-degrad { font-size: 0.68rem; }
+      .btn-grid { gap: 5px; }
+      .calc-card { padding: 12px; }
+    }
+
+    @media (max-width: 360px) {
+      .btn { min-height: 40px; font-size: 0.75rem; }
+      .btn-fn { font-size: 0.62rem; }
+      .btn-mem { font-size: 0.65rem; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>계산기</h1>
+  <p>일반 계산기 · 공학 계산기를 하나의 페이지에서 바로 사용하세요</p>
+</header>
+
+<!-- AdSense 슬롯 1: 헤더 하단 — publisher-id 입력 필요 -->
+<div class="ad-slot">광고 영역 (헤더 하단 — Google AdSense publisher-id 입력 후 활성화)</div>
+<!--
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-XXXXXXXXXX" crossorigin="anonymous"></script>
+<ins class="adsbygoogle"
+     style="display:block"
+     data-ad-client="ca-pub-XXXXXXXXXX"
+     data-ad-slot="XXXXXXXXXX"
+     data-ad-format="auto"
+     data-full-width-responsive="true"></ins>
+<script>(adsbygoogle = window.adsbygoogle || []).push({});</script>
+-->
+
+<main>
+  <h2 style="font-size:1.1rem; font-weight:700; color:#2563EB; margin-bottom:12px;">온라인 계산기</h2>
+
+  <!-- AdSense 슬롯 2: 탭 버튼 위 — publisher-id 입력 필요 -->
+  <div class="ad-slot">광고 영역 (계산기 상단 — Google AdSense publisher-id 입력 후 활성화)</div>
+  <!--
+  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-XXXXXXXXXX" crossorigin="anonymous"></script>
+  <ins class="adsbygoogle"
+       style="display:block"
+       data-ad-client="ca-pub-XXXXXXXXXX"
+       data-ad-slot="XXXXXXXXXX"
+       data-ad-format="auto"
+       data-full-width-responsive="true"></ins>
+  <script>(adsbygoogle = window.adsbygoogle || []).push({});</script>
+  -->
+
+  <!-- 탭 버튼 -->
+  <div class="tab-bar" role="tablist" aria-label="계산기 종류">
+    <button class="tab-btn active" id="tab-std" role="tab" aria-selected="true"
+            aria-controls="panel-std" onclick="switchTab('std')">일반 계산기</button>
+    <button class="tab-btn" id="tab-sci" role="tab" aria-selected="false"
+            aria-controls="panel-sci" onclick="switchTab('sci')">공학 계산기</button>
+  </div>
+
+  <!-- ══════════════════════════════════════════
+       일반 계산기 패널
+  ══════════════════════════════════════════ -->
+  <div class="calc-card active" id="panel-std" role="tabpanel" aria-labelledby="tab-std">
+    <div class="display" aria-live="polite">
+      <div class="display-history" id="std-history"></div>
+      <div class="display-main" id="std-display">0</div>
+    </div>
+    <div class="btn-grid btn-grid-std">
+      <!-- 행 1 -->
+      <button class="btn btn-ac"  onclick="stdAC()"         aria-label="전체 초기화">AC</button>
+      <button class="btn btn-op"  onclick="stdSign()"       aria-label="부호 전환">±</button>
+      <button class="btn btn-op"  onclick="stdPercent()"    aria-label="퍼센트">%</button>
+      <button class="btn btn-op"  onclick="stdOp('÷')"      aria-label="나누기">÷</button>
+      <!-- 행 2 -->
+      <button class="btn btn-num" onclick="stdDigit('7')">7</button>
+      <button class="btn btn-num" onclick="stdDigit('8')">8</button>
+      <button class="btn btn-num" onclick="stdDigit('9')">9</button>
+      <button class="btn btn-op"  onclick="stdOp('×')"      aria-label="곱하기">×</button>
+      <!-- 행 3 -->
+      <button class="btn btn-num" onclick="stdDigit('4')">4</button>
+      <button class="btn btn-num" onclick="stdDigit('5')">5</button>
+      <button class="btn btn-num" onclick="stdDigit('6')">6</button>
+      <button class="btn btn-op"  onclick="stdOp('−')"      aria-label="빼기">−</button>
+      <!-- 행 4 -->
+      <button class="btn btn-num" onclick="stdDigit('1')">1</button>
+      <button class="btn btn-num" onclick="stdDigit('2')">2</button>
+      <button class="btn btn-num" onclick="stdDigit('3')">3</button>
+      <button class="btn btn-op"  onclick="stdOp('+')"      aria-label="더하기">+</button>
+      <!-- 행 5 -->
+      <button class="btn btn-num btn-zero" onclick="stdDigit('0')" aria-label="0">0</button>
+      <button class="btn btn-num" onclick="stdDot()"        aria-label="소수점">.</button>
+      <button class="btn btn-eq"  onclick="stdEquals()"     aria-label="등호">=</button>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════
+       공학 계산기 패널
+  ══════════════════════════════════════════ -->
+  <div class="calc-card" id="panel-sci" role="tabpanel" aria-labelledby="tab-sci">
+    <div class="display" aria-live="polite">
+      <div class="display-history" id="sci-history"></div>
+      <div class="display-main" id="sci-display">0</div>
+    </div>
+    <!-- 메모리 배지 -->
+    <div id="sci-mem-badge" class="mem-badge">MEM: 0</div>
+
+    <div class="btn-grid btn-grid-sci">
+      <!-- 행 1: Deg/Rad, sin, cos, tan, ( -->
+      <button class="btn btn-degrad" id="btn-degrad" onclick="sciToggleDeg()" aria-label="각도 단위 전환">Deg</button>
+      <button class="btn btn-fn"  onclick="sciFn('sin')"    aria-label="사인">sin</button>
+      <button class="btn btn-fn"  onclick="sciFn('cos')"    aria-label="코사인">cos</button>
+      <button class="btn btn-fn"  onclick="sciFn('tan')"    aria-label="탄젠트">tan</button>
+      <button class="btn btn-paren" onclick="sciParen('(')" aria-label="여는 괄호">(</button>
+      <!-- 행 2: sin⁻¹, cos⁻¹, tan⁻¹, π, ) -->
+      <button class="btn btn-fn"  onclick="sciFn('asin')"   aria-label="아크사인">sin⁻¹</button>
+      <button class="btn btn-fn"  onclick="sciFn('acos')"   aria-label="아크코사인">cos⁻¹</button>
+      <button class="btn btn-fn"  onclick="sciFn('atan')"   aria-label="아크탄젠트">tan⁻¹</button>
+      <button class="btn btn-fn"  onclick="sciConst('π')"   aria-label="파이">π</button>
+      <button class="btn btn-paren" onclick="sciParen(')')" aria-label="닫는 괄호">)</button>
+      <!-- 행 3: log, ln, e^x, 10^x, MC -->
+      <button class="btn btn-fn"  onclick="sciFn('log')"    aria-label="로그">log</button>
+      <button class="btn btn-fn"  onclick="sciFn('ln')"     aria-label="자연로그">ln</button>
+      <button class="btn btn-fn"  onclick="sciFn('exp')"    aria-label="e의 x승">e^x</button>
+      <button class="btn btn-fn"  onclick="sciFn('pow10')"  aria-label="10의 x승">10^x</button>
+      <button class="btn btn-mem" onclick="sciMC()"         aria-label="메모리 초기화">MC</button>
+      <!-- 행 4: x², √x, x^y, e, MR -->
+      <button class="btn btn-fn"  onclick="sciFn('sq')"     aria-label="제곱">x²</button>
+      <button class="btn btn-fn"  onclick="sciFn('sqrt')"   aria-label="제곱근">√x</button>
+      <button class="btn btn-fn"  onclick="sciXY()"         aria-label="x의 y승">x^y</button>
+      <button class="btn btn-fn"  onclick="sciConst('e')"   aria-label="자연상수 e">e</button>
+      <button class="btn btn-mem" onclick="sciMR()"         aria-label="메모리 불러오기">MR</button>
+      <!-- 행 5: AC, ±, %, ÷, M+ -->
+      <button class="btn btn-ac"  onclick="sciAC()"         aria-label="전체 초기화">AC</button>
+      <button class="btn btn-op"  onclick="sciSign()"       aria-label="부호 전환">±</button>
+      <button class="btn btn-op"  onclick="sciPercent()"    aria-label="퍼센트">%</button>
+      <button class="btn btn-op"  onclick="sciOp('÷')"      aria-label="나누기">÷</button>
+      <button class="btn btn-mem" onclick="sciMPlus()"      aria-label="메모리 더하기">M+</button>
+      <!-- 행 6: 7, 8, 9, ×, M− -->
+      <button class="btn btn-num" onclick="sciDigit('7')">7</button>
+      <button class="btn btn-num" onclick="sciDigit('8')">8</button>
+      <button class="btn btn-num" onclick="sciDigit('9')">9</button>
+      <button class="btn btn-op"  onclick="sciOp('×')"      aria-label="곱하기">×</button>
+      <button class="btn btn-mem" onclick="sciMMinus()"     aria-label="메모리 빼기">M−</button>
+      <!-- 행 7: 4, 5, 6, −, [빈칸] -->
+      <button class="btn btn-num" onclick="sciDigit('4')">4</button>
+      <button class="btn btn-num" onclick="sciDigit('5')">5</button>
+      <button class="btn btn-num" onclick="sciDigit('6')">6</button>
+      <button class="btn btn-op"  onclick="sciOp('−')"      aria-label="빼기">−</button>
+      <button class="btn btn-empty" aria-hidden="true"></button>
+      <!-- 행 8: 1, 2, 3, +, [빈칸] -->
+      <button class="btn btn-num" onclick="sciDigit('1')">1</button>
+      <button class="btn btn-num" onclick="sciDigit('2')">2</button>
+      <button class="btn btn-num" onclick="sciDigit('3')">3</button>
+      <button class="btn btn-op"  onclick="sciOp('+')"      aria-label="더하기">+</button>
+      <button class="btn btn-empty" aria-hidden="true"></button>
+      <!-- 행 9: 0(2칸), ., =, [빈칸] -->
+      <button class="btn btn-num btn-zero" onclick="sciDigit('0')" aria-label="0">0</button>
+      <button class="btn btn-num" onclick="sciDot()"        aria-label="소수점">.</button>
+      <button class="btn btn-eq"  onclick="sciEquals()"     aria-label="등호">=</button>
+      <button class="btn btn-empty" aria-hidden="true"></button>
+    </div>
+  </div>
+
+</main>
+
+<!-- AdSense 슬롯 3: 페이지 하단 — publisher-id 입력 필요 -->
+<div class="ad-slot" style="max-width:728px; margin: 0 auto 16px;">광고 영역 (페이지 하단 — Google AdSense publisher-id 입력 후 활성화)</div>
+<!--
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-XXXXXXXXXX" crossorigin="anonymous"></script>
+<ins class="adsbygoogle"
+     style="display:block"
+     data-ad-client="ca-pub-XXXXXXXXXX"
+     data-ad-slot="XXXXXXXXXX"
+     data-ad-format="auto"
+     data-full-width-responsive="true"></ins>
+<script>(adsbygoogle = window.adsbygoogle || []).push({});</script>
+-->
+
+<footer>
+  <p>© 2026 온라인 계산기 · 모든 계산은 브라우저에서 처리됩니다</p>
+</footer>
+
+<script>
+/* ============================================================
+   공통 유틸
+============================================================ */
+var memory = 0; // 탭 전환해도 유지
+
+function fmtDisplay(val) {
+  if (typeof val !== 'number') return val;
+  if (!isFinite(val) || isNaN(val)) return '오류';
+  var abs = Math.abs(val);
+  // 12자리 초과 → 지수 표기
+  if (abs !== 0 && (abs >= 1e12 || (abs < 1e-6 && abs > 0))) {
+    return val.toExponential(6).replace(/\.?0+e/, 'e');
+  }
+  // 부동소수점 오차 제거: 최대 10자리 유효숫자로 반올림
+  var str = parseFloat(val.toPrecision(10)).toString();
+  return str;
+}
+
+function safeEval(expr) {
+  // 내부 계산용 수식 문자열을 JS로 변환
+  return expr
+    .replace(/÷/g, '/')
+    .replace(/×/g, '*')
+    .replace(/−/g, '-');
+}
+
+function isError(val) {
+  return val === '오류';
+}
+
+/* ============================================================
+   탭 전환
+============================================================ */
+function switchTab(tab) {
+  document.getElementById('tab-std').classList.toggle('active', tab === 'std');
+  document.getElementById('tab-sci').classList.toggle('active', tab === 'sci');
+  document.getElementById('tab-std').setAttribute('aria-selected', tab === 'std');
+  document.getElementById('tab-sci').setAttribute('aria-selected', tab === 'sci');
+  document.getElementById('panel-std').classList.toggle('active', tab === 'std');
+  document.getElementById('panel-sci').classList.toggle('active', tab === 'sci');
+  // 탭 전환 시 수식 초기화 (메모리는 유지)
+  stdReset();
+  sciReset();
+}
+
+/* ============================================================
+   일반 계산기 상태
+============================================================ */
+var std = {
+  current: '0',      // 현재 표시 문자열
+  prev: null,        // 직전 피연산자 (숫자)
+  op: null,          // 현재 연산자
+  waitingOperand: false,  // 연산자 직후 — 다음 입력은 새 피연산자
+  history: '',       // 히스토리 줄
+  justEvaled: false  // = 직후 플래그
+};
+
+function stdReset() {
+  std.current = '0';
+  std.prev = null;
+  std.op = null;
+  std.waitingOperand = false;
+  std.history = '';
+  std.justEvaled = false;
+  stdRefresh();
+}
+
+function stdRefresh() {
+  document.getElementById('std-display').textContent = std.current;
+  document.getElementById('std-history').textContent = std.history;
+}
+
+function stdAC() { stdReset(); }
+
+function stdDigit(d) {
+  if (std.current === '오류') { std.current = '0'; }
+  if (std.waitingOperand || std.justEvaled) {
+    std.current = d;
+    std.waitingOperand = false;
+    std.justEvaled = false;
+  } else {
+    if (std.current === '0' && d !== '.') {
+      std.current = d;
+    } else {
+      if (std.current.replace('-', '').replace('.', '').length >= 12) return;
+      std.current += d;
+    }
+  }
+  stdRefresh();
+}
+
+function stdDot() {
+  if (std.current === '오류') { std.current = '0'; }
+  if (std.waitingOperand || std.justEvaled) {
+    std.current = '0.';
+    std.waitingOperand = false;
+    std.justEvaled = false;
+    stdRefresh();
+    return;
+  }
+  if (std.current.indexOf('.') === -1) {
+    std.current += '.';
+    stdRefresh();
+  }
+}
+
+function stdOp(operator) {
+  if (std.current === '오류') return;
+  var cur = parseFloat(std.current);
+  if (std.op && !std.waitingOperand) {
+    var result = stdCompute(std.prev, cur, std.op);
+    std.current = isError(result) ? '오류' : fmtDisplay(result);
+    std.prev = isError(result) ? null : result;
+    std.history = (isError(result) ? '오류' : fmtDisplay(result)) + ' ' + operator;
+  } else {
+    std.prev = cur;
+    std.history = fmtDisplay(cur) + ' ' + operator;
+  }
+  std.op = operator;
+  std.waitingOperand = true;
+  std.justEvaled = false;
+  stdRefresh();
+}
+
+function stdEquals() {
+  if (std.current === '오류') return;
+  var cur = parseFloat(std.current);
+  if (std.op === null) return;
+  var histStr = std.history + ' ' + fmtDisplay(cur) + ' =';
+  var result = stdCompute(std.prev, cur, std.op);
+  std.history = histStr;
+  std.current = isError(result) ? '오류' : fmtDisplay(result);
+  std.prev = null;
+  std.op = null;
+  std.waitingOperand = false;
+  std.justEvaled = true;
+  stdRefresh();
+}
+
+function stdCompute(a, b, op) {
+  if (op === '+') return a + b;
+  if (op === '−') return a - b;
+  if (op === '×') return a * b;
+  if (op === '÷') {
+    if (b === 0) return '오류';
+    return a / b;
+  }
+  return b;
+}
+
+function stdSign() {
+  if (std.current === '0' || std.current === '오류') return;
+  std.current = (parseFloat(std.current) * -1).toString();
+  stdRefresh();
+}
+
+function stdPercent() {
+  if (std.current === '오류') return;
+  var val = parseFloat(std.current);
+  if (std.prev !== null && std.op) {
+    // 기존 피연산자의 %로 변환 (예: 200 + 10% → 200 + 20)
+    std.current = fmtDisplay((std.prev * val) / 100);
+  } else {
+    std.current = fmtDisplay(val / 100);
+  }
+  stdRefresh();
+}
+
+/* ============================================================
+   공학 계산기 상태
+============================================================ */
+var sci = {
+  current: '0',
+  prev: null,
+  op: null,
+  waitingOperand: false,
+  history: '',
+  justEvaled: false,
+  isDeg: true,
+  parenDepth: 0,
+  parenStack: [],   // {prev, op, history} saved on each '('
+  xForPow: null
+};
+
+function sciReset() {
+  sci.current = '0';
+  sci.prev = null;
+  sci.op = null;
+  sci.waitingOperand = false;
+  sci.history = '';
+  sci.justEvaled = false;
+  sci.parenDepth = 0;
+  sci.parenStack = [];
+  sci.xForPow = null;
+  sciRefresh();
+}
+
+function sciRefresh() {
+  document.getElementById('sci-display').textContent = sci.current;
+  document.getElementById('sci-history').textContent = sci.history;
+}
+
+function sciAC() { sciReset(); }
+
+function sciDigit(d) {
+  if (sci.current === '오류') { sci.current = '0'; }
+  if (sci.waitingOperand || sci.justEvaled) {
+    sci.current = d;
+    sci.waitingOperand = false;
+    sci.justEvaled = false;
+  } else {
+    if (sci.current === '0' && d !== '.') {
+      sci.current = d;
+    } else {
+      if (sci.current.replace('-', '').replace('.', '').length >= 12) return;
+      sci.current += d;
+    }
+  }
+  sciRefresh();
+}
+
+function sciDot() {
+  if (sci.current === '오류') { sci.current = '0'; }
+  if (sci.waitingOperand || sci.justEvaled) {
+    sci.current = '0.';
+    sci.waitingOperand = false;
+    sci.justEvaled = false;
+    sciRefresh();
+    return;
+  }
+  if (sci.current.indexOf('.') === -1) {
+    sci.current += '.';
+    sciRefresh();
+  }
+}
+
+function sciOp(operator) {
+  if (sci.current === '오류') return;
+  var cur = parseFloat(sci.current);
+  if (sci.op && !sci.waitingOperand) {
+    var result = sciCompute(sci.prev, cur, sci.op);
+    sci.current = isError(result) ? '오류' : fmtDisplay(result);
+    sci.prev = isError(result) ? null : result;
+    sci.history = (isError(result) ? '오류' : fmtDisplay(result)) + ' ' + operator;
+  } else {
+    sci.prev = cur;
+    sci.history = fmtDisplay(cur) + ' ' + operator;
+  }
+  sci.op = operator;
+  sci.waitingOperand = true;
+  sci.justEvaled = false;
+  sciRefresh();
+}
+
+function sciEquals() {
+  if (sci.current === '오류') return;
+  var cur = parseFloat(sci.current);
+  if (sci.op === null) return;
+  var histStr = sci.history + ' ' + fmtDisplay(cur) + ' =';
+  var result = sciCompute(sci.prev, cur, sci.op);
+  sci.history = histStr;
+  sci.current = isError(result) ? '오류' : fmtDisplay(result);
+  sci.prev = null;
+  sci.op = null;
+  sci.waitingOperand = false;
+  sci.justEvaled = true;
+  sciRefresh();
+}
+
+function sciCompute(a, b, op) {
+  if (op === '+') return a + b;
+  if (op === '−') return a - b;
+  if (op === '×') return a * b;
+  if (op === '÷') {
+    if (b === 0) return '오류';
+    return a / b;
+  }
+  if (op === '^') return Math.pow(a, b);
+  return b;
+}
+
+function sciSign() {
+  if (sci.current === '0' || sci.current === '오류') return;
+  sci.current = (parseFloat(sci.current) * -1).toString();
+  sciRefresh();
+}
+
+function sciPercent() {
+  if (sci.current === '오류') return;
+  var val = parseFloat(sci.current);
+  if (sci.prev !== null && sci.op) {
+    sci.current = fmtDisplay((sci.prev * val) / 100);
+  } else {
+    sci.current = fmtDisplay(val / 100);
+  }
+  sciRefresh();
+}
+
+/* 각도 단위 전환 */
+function sciToggleDeg() {
+  sci.isDeg = !sci.isDeg;
+  var btn = document.getElementById('btn-degrad');
+  btn.textContent = sci.isDeg ? 'Deg' : 'Rad';
+}
+
+/* toRad: Deg 모드일 때 입력값을 라디안으로 변환 */
+function toRad(val) {
+  return sci.isDeg ? (val * Math.PI / 180) : val;
+}
+
+/* toDeg: Rad 결과를 Deg로 변환 */
+function toDeg(val) {
+  return sci.isDeg ? (val * 180 / Math.PI) : val;
+}
+
+/* 단항 함수 적용 */
+function sciFn(fn) {
+  if (sci.current === '오류') return;
+  var x = parseFloat(sci.current);
+  var label = fn;
+  var result;
+  switch (fn) {
+    case 'sin':
+      result = Math.sin(toRad(x));
+      label = 'sin(' + sci.current + ')';
+      break;
+    case 'cos':
+      result = Math.cos(toRad(x));
+      label = 'cos(' + sci.current + ')';
+      break;
+    case 'tan': {
+      var r = toRad(x);
+      result = Math.tan(r);
+      if (Math.abs(result) > 1e14) result = '오류';
+      label = 'tan(' + sci.current + ')';
+      break;
+    }
+    case 'asin':
+      if (x < -1 || x > 1) { result = '오류'; }
+      else { result = toDeg(Math.asin(x)); }
+      label = 'sin⁻¹(' + sci.current + ')';
+      break;
+    case 'acos':
+      if (x < -1 || x > 1) { result = '오류'; }
+      else { result = toDeg(Math.acos(x)); }
+      label = 'cos⁻¹(' + sci.current + ')';
+      break;
+    case 'atan':
+      result = toDeg(Math.atan(x));
+      label = 'tan⁻¹(' + sci.current + ')';
+      break;
+    case 'log':
+      if (x <= 0) { result = '오류'; }
+      else { result = Math.log10(x); }
+      label = 'log(' + sci.current + ')';
+      break;
+    case 'ln':
+      if (x <= 0) { result = '오류'; }
+      else { result = Math.log(x); }
+      label = 'ln(' + sci.current + ')';
+      break;
+    case 'exp':
+      result = Math.exp(x);
+      label = 'e^(' + sci.current + ')';
+      break;
+    case 'pow10':
+      result = Math.pow(10, x);
+      label = '10^(' + sci.current + ')';
+      break;
+    case 'sq':
+      result = x * x;
+      label = '(' + sci.current + ')²';
+      break;
+    case 'sqrt':
+      if (x < 0) { result = '오류'; }
+      else { result = Math.sqrt(x); }
+      label = '√(' + sci.current + ')';
+      break;
+    default:
+      return;
+  }
+  // NaN / Infinity 최종 검사
+  if (result !== '오류' && (isNaN(result) || !isFinite(result))) {
+    result = '오류';
+  }
+  sci.history = label;
+  sci.current = isError(result) ? '오류' : fmtDisplay(result);
+  sci.justEvaled = true;
+  sci.waitingOperand = false;
+  sciRefresh();
+}
+
+/* x^y — 1단계: x를 저장하고 ^ 연산자로 설정 */
+function sciXY() {
+  if (sci.current === '오류') return;
+  sci.xForPow = parseFloat(sci.current);
+  sci.history = fmtDisplay(sci.xForPow) + ' ^';
+  sci.prev = sci.xForPow;
+  sci.op = '^';
+  sci.waitingOperand = true;
+  sci.justEvaled = false;
+  sciRefresh();
+}
+
+/* 수학 상수 입력 */
+function sciConst(c) {
+  var val;
+  if (c === 'π') val = fmtDisplay(Math.PI);
+  else if (c === 'e') val = fmtDisplay(Math.E);
+  else return;
+  if (sci.waitingOperand || sci.justEvaled || sci.current === '0') {
+    sci.current = val;
+    sci.waitingOperand = false;
+    sci.justEvaled = false;
+  } else {
+    sci.current = val;
+  }
+  sciRefresh();
+}
+
+/* 괄호 — 스택 기반: '(' 진입 시 상태 저장, ')' 시 복원 후 내부 결과 반영 */
+function sciParen(p) {
+  if (p === '(') {
+    sci.parenStack.push({ prev: sci.prev, op: sci.op, history: sci.history });
+    sci.parenDepth++;
+    sci.prev = null;
+    sci.op = null;
+    sci.history = '(';
+    sci.waitingOperand = true;
+    sci.justEvaled = false;
+    sciRefresh();
+  } else if (p === ')' && sci.parenDepth > 0) {
+    // 내부에 미완료 연산이 있으면 먼저 계산
+    if (sci.op !== null && !sci.waitingOperand) {
+      var cur = parseFloat(sci.current);
+      var res = sciCompute(sci.prev, cur, sci.op);
+      sci.current = isError(res) ? '오류' : fmtDisplay(res);
+    }
+    var innerVal = sci.current;
+    sci.parenDepth--;
+    var saved = sci.parenStack.pop();
+    sci.prev = saved.prev;
+    sci.op = saved.op;
+    sci.history = (saved.history || '') + '(' + innerVal + ')';
+    sci.current = innerVal;
+    sci.justEvaled = true;
+    sci.waitingOperand = false;
+    sciRefresh();
+  }
+}
+
+/* 메모리 조작 */
+function sciMC() {
+  memory = 0;
+  updateMemBadge();
+}
+function sciMR() {
+  sci.current = fmtDisplay(memory);
+  sci.waitingOperand = false;
+  sci.justEvaled = true;
+  sciRefresh();
+}
+function sciMPlus() {
+  if (sci.current === '오류') return;
+  memory += parseFloat(sci.current);
+  updateMemBadge();
+}
+function sciMMinus() {
+  if (sci.current === '오류') return;
+  memory -= parseFloat(sci.current);
+  updateMemBadge();
+}
+function updateMemBadge() {
+  var badge = document.getElementById('sci-mem-badge');
+  badge.textContent = 'MEM: ' + fmtDisplay(memory);
+  badge.classList.toggle('visible', memory !== 0);
+}
+
+/* ============================================================
+   키보드 지원 (일반 계산기 활성 탭 기준)
+============================================================ */
+document.addEventListener('keydown', function(e) {
+  var isStd = document.getElementById('panel-std').classList.contains('active');
+  var key = e.key;
+
+  // 공통 처리 함수 선택
+  var digitFn  = isStd ? stdDigit  : sciDigit;
+  var dotFn    = isStd ? stdDot    : sciDot;
+  var opFn     = isStd ? stdOp     : sciOp;
+  var equalsFn = isStd ? stdEquals : sciEquals;
+  var acFn     = isStd ? stdAC     : sciAC;
+
+  if (key >= '0' && key <= '9') { digitFn(key); }
+  else if (key === '.') { dotFn(); }
+  else if (key === '+') { opFn('+'); }
+  else if (key === '-') { opFn('−'); }
+  else if (key === '*') { opFn('×'); }
+  else if (key === '/') { e.preventDefault(); opFn('÷'); }
+  else if (key === 'Enter' || key === '=') { equalsFn(); }
+  else if (key === 'Backspace') {
+    // 한 자리 지우기
+    if (isStd) {
+      if (std.current === '오류') { std.current = '0'; }
+      else if (std.current.length > 1) { std.current = std.current.slice(0, -1); }
+      else { std.current = '0'; }
+      stdRefresh();
+    } else {
+      if (sci.current === '오류') { sci.current = '0'; }
+      else if (sci.current.length > 1) { sci.current = sci.current.slice(0, -1); }
+      else { sci.current = '0'; }
+      sciRefresh();
+    }
+  }
+  else if (key === 'Escape') { acFn(); }
+});
+</script>
+
+</body>
+</html>
